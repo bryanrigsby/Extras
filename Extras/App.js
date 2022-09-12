@@ -1,14 +1,15 @@
-//react
+// TODO
+//-firestore
+//-notifications
+//-chat
+//
+
+
+
+
 import React, { useState, useEffect, useRef } from 'react'
 import { StyleSheet, View, Alert } from 'react-native'
-
-//expo
 import Constants from 'expo-constants'
-
-//firebase
-// import {app, fireDB} from './firebase/firebase.js'
-
-//navigation
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
