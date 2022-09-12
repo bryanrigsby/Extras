@@ -1,73 +1,100 @@
+//react
 import React, { useState, useEffect, useRef } from 'react'
 import { StyleSheet, View, Alert } from 'react-native'
+
+//expo
 import Constants from 'expo-constants'
+
+//firebase
+// import {app, fireDB} from './firebase/firebase.js'
+
+//navigation
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+//components
 import TopBar from './components/TopBar'
 import axios from 'axios'
 import BottomBar from './components/BottomBar'
 import Swipes from './components/Swipes'
 
+//screen
+import LoginScreen from './screens/LoginScreen';
+import HomeScreen from './screens/HomeScreen';
+
+const Stack = createNativeStackNavigator();
+
 export default function App() {
-  const [users, setUsers] = useState([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const swipesRef = useRef(null)
+  // const [users, setUsers] = useState([])
+  // const [currentIndex, setCurrentIndex] = useState(0)
+  // const swipesRef = useRef(null)
 
-  async function fetchUsers() {
-    try {
-      const { data } = await axios.get('https://randomuser.me/api/?gender=female&results=50')
-      setUsers(data.results)
-    } catch (error) {
-      console.log(error)
-      Alert.alert('Error getting users', '', [{ text: 'Retry', onPress: () => fetchUsers() }])
-    }
-  }
+  // async function fetchUsers() {
+  //   try {
+  //     const { data } = await axios.get('https://randomuser.me/api/?gender=female&results=50')
+  //     setUsers(data.results)
+  //   } catch (error) {
+  //     console.log(error)
+  //     Alert.alert('Error getting users', '', [{ text: 'Retry', onPress: () => fetchUsers() }])
+  //   }
+  // }
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
+  // useEffect(() => {
+  //   fetchUsers()
+  // }, [])
 
-  function handleLike() {
-    console.log('like')
-    nextUser()
-  }
+  // function handleLike() {
+  //   console.log('like')
+  //   nextUser()
+  // }
 
-  function handlePass() {
-    console.log('pass')
-    nextUser()
-  }
+  // function handlePass() {
+  //   console.log('pass')
+  //   nextUser()
+  // }
 
-  function nextUser() {
-    const nextIndex = users.length - 2 === currentIndex ? 0 : currentIndex + 1
-    setCurrentIndex(nextIndex)
-  }
+  // function nextUser() {
+  //   const nextIndex = users.length - 2 === currentIndex ? 0 : currentIndex + 1
+  //   setCurrentIndex(nextIndex)
+  // }
 
-  function handleLikePress() {
-    swipesRef.current.openLeft()
-  }
-  function handlePassPress() {
-    swipesRef.current.openRight()
-  }
+  // function handleLikePress() {
+  //   swipesRef.current.openLeft()
+  // }
+  // function handlePassPress() {
+  //   swipesRef.current.openRight()
+  // }
+
+  // return (
+  //   <View style={styles.container}>
+  //     <TopBar />
+  //     <View style={styles.swipes}>
+  //       {users.length > 1 &&
+  //         users.map(
+  //           (u, i) =>
+  //             currentIndex === i && (
+  //               <Swipes
+  //                 key={i}
+  //                 ref={swipesRef}
+  //                 currentIndex={currentIndex}
+  //                 users={users}
+  //                 handleLike={handleLike}
+  //                 handlePass={handlePass}
+  //               ></Swipes>
+  //             )
+  //         )}
+  //     </View>
+  //     <BottomBar handleLikePress={handleLikePress} handlePassPress={handlePassPress} />
+  //   </View>
+  // )
 
   return (
-    <View style={styles.container}>
-      <TopBar />
-      <View style={styles.swipes}>
-        {users.length > 1 &&
-          users.map(
-            (u, i) =>
-              currentIndex === i && (
-                <Swipes
-                  key={i}
-                  ref={swipesRef}
-                  currentIndex={currentIndex}
-                  users={users}
-                  handleLike={handleLike}
-                  handlePass={handlePass}
-                ></Swipes>
-              )
-          )}
-      </View>
-      <BottomBar handleLikePress={handleLikePress} handlePassPress={handlePassPress} />
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen options={{headerShown: false}} name="Login" component={LoginScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   )
 }
 
