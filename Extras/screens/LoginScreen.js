@@ -1,6 +1,6 @@
 import { KeyboardAvoidingView, StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native'
 import React, {useEffect, useState} from 'react'
-import {auth} from '../firebase/firebase'
+import {auth, db} from '../firebase/firebase'
 import { useNavigation } from '@react-navigation/core'
 
 const LoginScreen = () => {
@@ -17,8 +17,18 @@ const LoginScreen = () => {
             }
         })
 
+        getExtras()
+ 
         return unsubscribe
     }, [])
+
+    const getExtras = async () => {
+        db.collection("extras").get().then((querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                console.log(`${doc.id} => ${doc.data()}`)
+            })
+        })
+    }
 
     const handleSignUp = () => {
         auth
