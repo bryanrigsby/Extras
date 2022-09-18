@@ -1,31 +1,33 @@
-import { KeyboardAvoidingView, StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native'
+import { SafeAreaView, KeyboardAvoidingView, StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native'
 import React, {useEffect, useState} from 'react'
 import {auth, db} from '../firebase/firebase'
-import { useNavigation } from '@react-navigation/core'
+import { useNavigation } from '@react-navigation/native'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
 
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [errorMsg, setErrorMsg] = useState('')
 
-    const naviagation = useNavigation()
+    const navigation = useNavigation()
 
     useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged(user => {
-            if(user){
-                naviagation.replace("Home")
-            }
-        })
+        // const unsubscribe = auth.onAuthStateChanged(user => {
+        //     if(user){
+        //         naviagation.replace("Home")
+        //     }
+        // })
 
         getExtras()
  
-        return unsubscribe
+        // return unsubscribe
     }, [])
 
     const getExtras = async () => {
         db.collection("extras").get().then((querySnapshot) => {
             querySnapshot.forEach((doc) => {
-                console.log(`${doc.id} => ${doc.data()}`)
+                console.log(`doc.id: ${doc.id} => doc.data: ${doc.data()}`)
             })
         })
     }
@@ -35,9 +37,12 @@ const LoginScreen = () => {
         .createUserWithEmailAndPassword(email, password)
         .then(userCredentials => {
             const user = userCredentials.user;
-            console.log('Registered with: ', user.email)
+            console.log('Registered with: ', user)
+            navigation.navigate("Register", {userEmail: user.email, userUID: user.uid})
         })
-        .catch(error => alert(error.message))
+        .catch(error => {
+            setErrorMsg(error.message)            
+        })
     }
 
     const handleLogin = () => {
@@ -46,46 +51,53 @@ const LoginScreen = () => {
         .then(userCredentials => {
             const user = userCredentials.user;
             console.log('Logged in with: ', user.email)
+            navigation.navigate("Home")
         })
-        .catch(error => alert(error.message))
+        .catch(error => {
+            setErrorMsg(error.message)
+        })
     }
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior="padding"
-        >
-            <View style={styles.inputContainer}>
-                <TextInput 
-                    placeholder='Email'
-                    value={email}
-                    onChangeText={text => setEmail(text) }
-                    style={styles.input}
-                />
-                <TextInput 
-                    placeholder='Password'
-                    value={password}
-                    onChangeText={text => setPassword(text)}
-                    style={styles.input}
-                    secureTextEntry
-                />
-            </View>
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior="padding"
+            >
+                <View style={styles.inputContainer}>
+                    <TextInput 
+                        placeholder='Email'
+                        value={email}
+                        onChangeText={text => setEmail(text) }
+                        style={styles.input}
+                    />
+                    <TextInput 
+                        placeholder='Password'
+                        value={password}
+                        onChangeText={text => setPassword(text)}
+                        style={styles.input}
+                        secureTextEntry
+                    />
+                </View>
 
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    onPress={handleLogin}
-                    style={styles.button}
-                >
-                    <Text style={styles.buttonText}>Login</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={handleSignUp}
-                    style={[styles.button, styles.buttonOutline]}
-                >
-                    <Text style={styles.buttonOutlineText}>Register</Text>
-                </TouchableOpacity>
-            </View>
-        </KeyboardAvoidingView>
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                        onPress={handleLogin}
+                        style={styles.button}
+                    >
+                        <Text style={styles.buttonText}>Login</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={handleSignUp}
+                        style={[styles.button, styles.buttonOutline]}
+                    >
+                        <Text style={styles.buttonOutlineText}>Register</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{errorMsg}</Text>
+                </View>
+            </KeyboardAvoidingView>
     )
 }
 
@@ -136,5 +148,14 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         fontSize: 16,
     },
-
+    errorContainer: {
+        width: '80%',
+        marginTop: 10,
+    },
+    errorText: {
+        color: 'red',
+        width: '100%',
+        fontSize: 16,
+        fontWeight: 'bold',
+    }
 })

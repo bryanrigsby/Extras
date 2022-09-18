@@ -1,5 +1,5 @@
 // TODO
-//-firestore
+
 //-notifications
 //-chat
 //
@@ -22,6 +22,7 @@ import Swipes from './components/Swipes'
 //screen
 import LoginScreen from './screens/LoginScreen';
 import HomeScreen from './screens/HomeScreen';
+import RegisterScreen from './screens/RegisterScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -93,7 +94,8 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator>
         <Stack.Screen options={{headerShown: false}} name="Login" component={LoginScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen options={{headerShown: false}} name="Home" component={HomeScreen} />
+        <Stack.Screen options={{headerShown: false}} name="Register" component={RegisterScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   )
