@@ -3,9 +3,9 @@ import React from 'react'
 import { auth } from '../firebase/firebase'
 import { useNavigation } from '@react-navigation/native'
 
-const HomeScreen = ({params}) => {
+const HomeScreen = ({route}) => {
 
-  console.log('params in HomeScreen', params)
+  console.log('params in HomeScreen', route.params)
 
   const navigation = useNavigation()
 

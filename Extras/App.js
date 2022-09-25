@@ -12,6 +12,7 @@ import { StyleSheet, View, Alert } from 'react-native'
 import Constants from 'expo-constants'
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { MD3LightTheme as DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
 
 //components
 import TopBar from './components/TopBar'
@@ -25,6 +26,15 @@ import HomeScreen from './screens/HomeScreen';
 import RegisterScreen from './screens/RegisterScreen';
 
 const Stack = createNativeStackNavigator();
+
+const theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    // primary: 'tomato',
+    // secondary: 'yellow',
+  },
+};
 
 export default function App() {
   // const [users, setUsers] = useState([])
@@ -92,11 +102,13 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen options={{headerShown: false}} name="Login" component={LoginScreen} />
-        <Stack.Screen options={{headerShown: false}} name="Home" component={HomeScreen} />
-        <Stack.Screen options={{headerShown: false}} name="Register" component={RegisterScreen} />
-      </Stack.Navigator>
+      <PaperProvider theme={theme}>
+        <Stack.Navigator>
+          <Stack.Screen options={{headerShown: false}} name="Login" component={LoginScreen} />
+          <Stack.Screen options={{headerShown: false}} name="Home" component={HomeScreen} />
+          <Stack.Screen options={{headerShown: false}} name="Register" component={RegisterScreen} />
+        </Stack.Navigator>
+      </PaperProvider>
     </NavigationContainer>
   )
 }

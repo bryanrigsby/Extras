@@ -1,12 +1,12 @@
-import { SafeAreaView, StyleSheet, Text, View, TextInput, Pressable } from 'react-native'
+import { StyleSheet, View, Pressable, Alert, KeyboardAvoidingView, ScrollView } from 'react-native'
 import {Picker} from '@react-native-picker/picker';
+import RadioButtonGroup, { RadioButtonItem } from "expo-radio-button";
 import React, {useState, useEffect} from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ScrollView } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native';
-import { Header } from 'react-native/Libraries/NewAppScreen';
-import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import {auth, db} from '../firebase/firebase'
+import { Appbar, TextInput, Button, RadioButton, Text, Divider } from 'react-native-paper';
+import DropDown from "react-native-paper-dropdown";
 
 
 
@@ -18,16 +18,39 @@ const RegisterScreen = ({route}) => {
 
   const navigation = useNavigation()
 
-  const [userType, setUserType] = useState('extra')
+  const genderList = [
+    {
+      label: "Male",
+      value: "male",
+    },
+    {
+      label: "Female",
+      value: "female",
+    },
+    {
+      label: "Non-Binary",
+      value: "nonbinary",
+    },
+  ];
+
+  const [userType, setUserType] = useState(null)
+  const [showDropDown, setShowDropDown] = useState(false);
+  const [gender, setGender] = useState(null)
 
   const [extra, setExtra] = useState({
     uid: userUID,
     email: userEmail,
     firstName: '',
     lastName: '',
-    gender: 'male',
+    gender: null,
     //add rest
   })
+
+  const setGenderFunc = (gender) => {
+    setGender(gender)
+    // setExtra({...extra, gender: gender})
+    setValidationError({...validationError, gender: false})
+  }
 
   const [company, setCompany] = useState({
     uid: userUID,
@@ -46,9 +69,16 @@ const RegisterScreen = ({route}) => {
     //company
     companyName: false,
   })
+
+  useEffect(() => {
+    console.log('extra', extra)
+    console.log('gender', gender)
+    console.log('company', company)
+  }, [extra, gender, company])
+  
   
   const addExtra = async() => {
-    console.log("getting into addExtra")
+    console.log("getting into addExtra", extra)
     try {
       if(!extra.firstName || extra.firstName.trim() === ''){
         setValidationError({...validationError, firstName: true})
@@ -84,7 +114,7 @@ const RegisterScreen = ({route}) => {
       )
         return
       }
-      if(!extra.gender){
+      if(!gender){
         setValidationError({...validationError, gender: true})
         return
       }
@@ -95,15 +125,14 @@ const RegisterScreen = ({route}) => {
         ...extra,
         firstName: extra.firstName,
         lastName: extra.lastName,
-        gender: extra.gender,
+        gender: gender,
       }
 
       console.log('extraObj to be saved', extraObj)
 
-      const res = await firestore().collection('extras').add(extraObj)
-      console.log('created extra', res)
+      const res = await db.collection('extras').add(extraObj)
       Object.assign(extra, {id: res.id})
-      await firestore().collection('extras').doc(res.id).update({
+      await db.collection('extras').doc(res.id).update({
         id: res.id
       })
 
@@ -155,10 +184,9 @@ const RegisterScreen = ({route}) => {
 
       console.log('companyObj to be saved', companyObj)
 
-      const res = await firestore().collection('companies').add(companyObj)
-      console.log('created company', res)
+      const res = await db.collection('companies').add(companyObj)
       Object.assign(company, {id: res.id})
-      await firestore().collection('companies').doc(res.id).update({
+      await db.collection('companies').doc(res.id).update({
         id: res.id
       })
 
@@ -180,93 +208,83 @@ const RegisterScreen = ({route}) => {
   }
 
   return (
-    <SafeAreaView>
+    <>
+    <Appbar.Header>
+        <Appbar.Content title="Extras" />
+    </Appbar.Header>
+    <View style={styles.container}>
       <ScrollView>
         <KeyboardAvoidingView enabled behavior={'position'} style={styles.container}>
           <View style={styles.formContainer}>
-            {/* <Text style={styles.header}>Account Details</Text> */}
-            <Text style={styles.header}>{userEmail}</Text> 
-            <View style={styles.pickerContainer}>
-              <Picker
-              selectedValue={userType}
-              onValueChange={(itemValue, itemIndex) => 
-                setUserType(itemValue)
-              }
-            >
-              <Picker.Item label={"Extra"} value={"extra"} />
-              <Picker.Item label={"Company"} value={"company"} />
-              </Picker>
+          <Text variant={"headlineLarge"} style={styles.label}>Who are you?</Text>
+            <View style={styles.buttonContainer}>
+                <Button style={{marginRight: 10, width: 150}} mode="contained" onPress={() => setUserType('extra')}>
+                    Extra
+                </Button>
+                <Button style={{width: 150, marginBottom: 20}} mode="contained" onPress={() => setUserType('company')}>
+                    Company
+                </Button>
             </View>
+            <Divider bold style={{marginBottom: 20}} />
           
             <View style={styles.bodyContainer}>
-              {userType && userType == 'extra' ? 
+              {!userType ? 
+                <View style={{display: 'none'}}></View>
+              : userType == 'extra' ? 
               <>
-                <TextInput 
-                autoCorrect={false}
-                autoComplete={'off'}
-                maxLength={50}
-                style={styles.formTextInput}
-                placeholderTextColor={'grey'}
-                placeholder='Enter first Name'
-                onChangeText={(text) => setExtra({...extra, firstName:text}, setValidationError({...validationError, firstName: false}))}
-                value={extra.firstName}
+                <TextInput
+                  label="Enter First Name"
+                  value={extra.firstName}
+                  onChangeText={text => setExtra({...extra, firstName:text}, setValidationError({...validationError, firstName: false}))}
+                  style={{marginBottom: 10}}
                 />
                 <Text style={validationError.firstName ? styles.errorText : {display: 'none'}}>First Name is required</Text>
 
-                <TextInput 
-                autoCorrect={false}
-                autoComplete={'off'}
-                maxLength={50}
-                style={styles.formTextInput}
-                placeholderTextColor={'grey'}
-                placeholder='Enter last Name'
-                onChangeText={(text) => setExtra({...extra, lastName:text}, setValidationError({...validationError, lastName: false}))}
-                value={extra.lastName}
+                <TextInput
+                  label="Enter Last Name"
+                  value={extra.lastName}
+                  onChangeText={text => setExtra({...extra, lastName:text}, setValidationError({...validationError, lastName: false}))}
+                  style={{marginBottom: 10}}
                 />
                 <Text style={validationError.lastName ? styles.errorText : {display: 'none'}}>Last Name is required</Text>
-
-                <Picker
-                  selectedValue={extra.gender}
-                  onValueChange={(itemValue, itemIndex) => 
-                    setExtra({...extra, gender: itemValue})
-                  }
-                >
-                  <Picker.Item label={"Male"} value={"male"} />
-                  <Picker.Item label={"Female"} value={"female"} />
-                  <Picker.Item label={"Non-binary"} value={"nonbinary"} />
-                </Picker>
+                <DropDown
+                  label={"Gender"}
+                  mode={"flat"}
+                  visible={showDropDown}
+                  showDropDown={() => setShowDropDown(true)}
+                  onDismiss={() => setShowDropDown(false)}
+                  value={gender}
+                  setValue={setGenderFunc}
+                  list={genderList}
+                />
                 <Text style={validationError.gender ? styles.errorText: {display: 'none'}}>Gender is required</Text>
               </>
               :
               <>
-                <TextInput 
-                  autoCorrect={false}
-                  autoComplete={'off'}
-                  maxLength={50}
-                  style={styles.formTextInput}
-                  placeholderTextColor={'grey'}
-                  placeholder='Company Name'
-                  onChangeText={(text) => setCompany({...company, companyName:text}, setValidationError({...validationError, companyName: false}))}
+              <TextInput
+                  label="Enter Company Name"
                   value={company.companyName}
+                  onChangeText={text => setCompany({...company, companyName:text}, setValidationError({...validationError, companyName: false}))}
+                  style={{marginBottom: 10}}
                 />
                 <Text style={validationError.companyName ? styles.errorText : {display: 'none'}}>Company Name is required</Text>
               </>
               }
             </View>
             
+            {userType &&
             <View style={styles.submitContainer}>
-              <Pressable
-              style={[styles.submitButton, {marginTop: 20}]}
-              onPress={userType == 'extra' ?  addExtra : addCompany}
-              >
-                <Text style={styles.textStyle}>Create Account</Text>
-              </Pressable>
+              <Button style={{width: 250}} mode="contained" onPress={userType == 'extra' ?  addExtra : addCompany}>
+                  Create Account
+              </Button>
             </View>
+            }
 
-          </View>
+          </View> 
         </KeyboardAvoidingView>
       </ScrollView>
-    </SafeAreaView>
+      </View>
+    </>
   )
   
 }
@@ -282,12 +300,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 25,
     fontWeight: 'bold',
-    marginBottom: -40,
+    marginBottom: 30,
+  },
+  emailHeader: {
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
     // backgroundColor: 'pink',
   },
   label: {
     textAlign: 'center',
-    fontSize: 15,
+    // fontSize: 15,
     // fontWeight: 'bold',
     // marginBottom: 20,
   },
@@ -307,13 +331,14 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   pickerContainer: {
-
+    flex: 1,
   },
   bodyContainer: {
 
   },
   submitContainer: {
-
+    alignItems: 'center',
+    marginTop: 10
   },
   errorText: {
     color: 'crimson',
@@ -342,4 +367,10 @@ const styles = StyleSheet.create({
     elevation: 2,
     backgroundColor: "darkgreen",
   },
+  buttonContainer: {
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginTop: 10,
+    marginBottom: 10,
+},
 })
