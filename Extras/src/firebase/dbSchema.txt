@@ -1,0 +1,44 @@
+extras
+- id -- provided by firebase
+- uid -- from user 
+- email -- from user
+- firstName
+- lastName
+- gender
+-- below not added yet
+- phone
+- age 
+- race
+- skinTone
+- location
+- social
+- bio
+- image
+
+
+
+companies
+- id -- provided by firebase
+- uid -- from user
+- email -- from user
+- companyName
+- companyContactFirstName -- not yet added 
+- companyContactLastName -- not yet added 
+- companyContactPhone -- not yet added 
+- social ?
+- jobs -- array of job ids the company has posted
+
+
+
+
+jobs
+id -- provided by firebase
+companyID -- id of company that posted job
+jobContactEmail -- could be the same as the company email
+jobDesc -- description of job
+--below not added yet
+location 
+pay ?
+duration
+lookingFor ?
+image ?

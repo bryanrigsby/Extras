@@ -1,0 +1,25 @@
+async storage
+getSnapshot in App.js for extras and jobs to update in real time
+save extras and jobs in context
+
+create theme
+card layout for extra and jobs
+profile page for extra and companies
+job entry form for company
+figure out how to upload images to cloud storage bucket
+handle matches
+figure where/how to charge $$$
+
+selection page is loading screen to get extras and jobs
+once loaded, move to home screen and display extras
+toggle at top of home screen for extras/jobs 
+
+
+
+
+
+
+***** Common Errors ********
+if getting unable to resolve "idb" from "node_modules/@firebase/app/dist/esm/index.esm2017.js"
+    then got to idb package.json and change main to index.js
+    - https://github.com/firebase/firebase-js-sdk/issues/6253#issuecomment-1159733409
