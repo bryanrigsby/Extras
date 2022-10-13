@@ -18,8 +18,8 @@ const ProfileScreen = ({route, navigation}) => {
 
 
   const { user, setUser, extras, setExtras, jobs, setJobs } = useContext(Context)
-  const userEmail = route.params.userEmail
-  const userUID = route.params.userUID
+  const userEmail = route.params && route.params.userEmail ? route.params.userEmail : 'testEmail@test.com'
+  const userUID = route.params && route.params.userUID ? route.params.userUID : 'testUID'
 
   const genderList = [
     {
@@ -36,7 +36,7 @@ const ProfileScreen = ({route, navigation}) => {
     },
   ];
 
-  const [userType, setUserType] = useState(null)
+  const [userType, setUserType] = useState('extra')
   const [showDropDown, setShowDropDown] = useState(false);
   const [gender, setGender] = useState(null)
   const [imageURI, setImageURI] = useState(null)
@@ -109,16 +109,17 @@ const ProfileScreen = ({route, navigation}) => {
       setErrorMsg('Last name must be less than 50 charaters')
       return false
     }
-    if(!imageURI){
-      setValidationError({...validationError, imageURI: true})
-      setErrorMsg('A picture must be provided')
-      return false
-    }
     if(!gender){
       setValidationError({...validationError, gender: true})
       setErrorMsg('Gender must be selected')
       return false
     }
+    if(!imageURI){
+      setValidationError({...validationError, imageURI: true})
+      setErrorMsg('A picture must be provided')
+      return false
+    }
+    
 
     return true
   }
@@ -341,10 +342,10 @@ const ProfileScreen = ({route, navigation}) => {
           <View style={styles.formContainer}>
           <Text variant={"headlineLarge"} style={styles.label}>Who are you?</Text>
             <View style={styles.buttonContainer}>
-                <Button style={{marginRight: 10, width: 150, marginBottom: 20}} mode="contained" onPress={() => setUserType('extra')}>
+                <Button style={userType == 'extra' ? {backgroundColor: 'blue', marginRight: 10, width: 150, marginBottom: 20} : {marginRight: 10, width: 150, marginBottom: 20}} mode="contained" onPress={() => setUserType('extra')}>
                     Extra
                 </Button>
-                <Button style={{width: 150, marginBottom: 20}} mode="contained" onPress={() => setUserType('company')}>
+                <Button style={userType == 'company' ? {backgroundColor: 'blue',  width: 150, marginBottom: 20} : {width: 150, marginBottom: 20}} mode="contained" onPress={() => setUserType('company')}>
                     Company
                 </Button>
             </View>
@@ -371,29 +372,42 @@ const ProfileScreen = ({route, navigation}) => {
                 />
                 <Text style={validationError.lastName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
 
-                {/* change to upload */}
-                <View>
-                  <Button mode="contained" onPress={pickImage}>Choose image</Button>
-                  <Button mode="contained" onPress={takePhoto}>Take photo</Button>
+                <View style={{marginBottom: 20}}>
+                  <DropDown
+                    label={"Gender"}
+                    mode={"flat"}
+                    visible={showDropDown}
+                    showDropDown={() => setShowDropDown(true)}
+                    onDismiss={() => setShowDropDown(false)}
+                    value={gender}
+                    setValue={setGenderFunc}
+                    list={genderList}
+                  />
                 </View>
+                
+                <Text style={validationError.gender ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
+
+                <Text variant={"headlineSmall"} style={styles.label}>Profile Picture</Text>
+                <View style={styles.buttonContainer}>
+                  
+                        <Button style={{marginRight: 10, width: 150,}} mode="contained" onPress={pickImage}>
+                          Choose image
+                        </Button>
+                        <Button style={{width: 150}} mode="contained" onPress={takePhoto}>
+                          Take photo
+                        </Button>
+                    </View>
                 
                 {imageURI && <Image source={{ uri: imageURI }} style={{ width: 200, height: 200 }} />}
            
                 <Text style={validationError.imageURI ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
-                <DropDown
-                  label={"Gender"}
-                  mode={"flat"}
-                  visible={showDropDown}
-                  showDropDown={() => setShowDropDown(true)}
-                  onDismiss={() => setShowDropDown(false)}
-                  value={gender}
-                  setValue={setGenderFunc}
-                  list={genderList}
-                />
-                <Text style={validationError.gender ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
+
+                <Divider bold style={{marginBottom: 20}} />
+                
               </>
               :
               <>
+              <View style={{marginBottom: 20}}>
               <TextInput
                   label="Enter Company Name"
                   value={company.companyName}
@@ -401,13 +415,17 @@ const ProfileScreen = ({route, navigation}) => {
                   style={{marginBottom: 10}}
                 />
                 <Text style={validationError.companyName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+                
+              </View>
+              <Divider bold style={{marginBottom: 20}} />
               </>
               }
             </View>
             
             {userType &&
             <View style={styles.submitContainer}>
-              <Button style={{width: 250}} mode="contained" onPress={userType == 'extra' ?  addExtra : addCompany}>
+              <Button width={300} mode="contained" onPress={userType == 'extra' ?  addExtra : addCompany}>
                   Create Account
               </Button>
             </View>
@@ -505,6 +523,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     marginTop: 10,
-    marginBottom: 10,
-},
+    marginBottom: 20,
+  },
 })
