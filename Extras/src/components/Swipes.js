@@ -4,7 +4,7 @@ import Swipeable from 'react-native-gesture-handler/Swipeable'
 import { RectButton } from 'react-native-gesture-handler'
 import SwipeableImage from './SwipeableImage'
 
-function Swipes({ data, currentIndex, handleLike, handlePass, swipesRef }) {
+const Swipes = ({ data, currentIndex, handleLike, handlePass, swipesRef }) => {
   console.log('data in Swipes', data)
   const [willLike, setWillLike] = useState(false)
   const [willPass, setWillPass] = useState(false)

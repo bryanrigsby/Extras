@@ -2,7 +2,7 @@ import React from 'react'
 import { View, Image, StyleSheet, Text } from 'react-native'
 import { FontAwesome } from '@expo/vector-icons'
 
-export default function SwipeableImage({ data, willLike, willPass }) {
+const SwipeableImage = ({ data, willLike, willPass }) => {
   console.log('data in SwipeableImage', data)
   return (
     <View>
@@ -37,6 +37,8 @@ export default function SwipeableImage({ data, willLike, willPass }) {
     </View>
   )
 }
+
+export default SwipeableImage
 
 const boxStyle = {
   position: 'absolute',

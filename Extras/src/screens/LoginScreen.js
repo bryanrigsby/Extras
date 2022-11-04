@@ -1,5 +1,5 @@
 import {StyleSheet, Text, View, Alert } from 'react-native'
-import React, {useState, useContext} from 'react'
+import React, {useState, useContext, useEffect} from 'react'
 import {db} from '../firebase/firebase'
 import {collection, getDocs, query, where} from 'firebase/firestore'
 import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from 'firebase/auth'
@@ -7,11 +7,11 @@ import { useNavigation } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Appbar, TextInput, Button, ActivityIndicator, MD2Colors } from 'react-native-paper'
 import { Context } from '../context/Context'
-import { validateEmail, setAsyncStorage, getExtras, getJobs } from '../util'
+import { validateEmail, getExtras, getJobs, getUserFromDB, setAsyncStorage } from '../util'
 
-const LoginScreen = ({navigation}) => {
+const LoginScreen = ({navigation, routes}) => {
 
-    const { user, setUser, extras, setExtras, jobs, setJobs } = useContext(Context)
+    const { extras, setExtras, jobs, setJobs } = useContext(Context)
     const auth = getAuth()
  
     const [email, setEmail] = useState('')
@@ -23,7 +23,10 @@ const LoginScreen = ({navigation}) => {
     const [validationError, setValidationError] = useState({
         email: false,
         password: false,
-      })
+    })
+
+    
+      
 
     const validateForm = () => {
         if(!email || email.trim() === ''){
@@ -70,12 +73,26 @@ const LoginScreen = ({navigation}) => {
         }
         setIsLoading(true)
         signInWithEmailAndPassword(auth, email, password)
-        .then(userCredentials => {
+        .then(async userCredentials => {
             const loggedInUser = userCredentials.user;
             console.log('Logged in with: ', loggedInUser)
-            getUserFromDB(loggedInUser.uid)
+            let result = await getUserFromDB(loggedInUser.uid)
+            console.log('result', result)
+            let isExtra = !!(result.user.firstName)
+            const userForAsync = JSON.stringify({uid: loggedInUser.uid, isExtra: isExtra});
+            await setAsyncStorage('@user', userForAsync)
+            //set state of jobs or extra and pass isExtra based on return
+            if(!isExtra){
+                setExtras(result.extras)
+                navigation.navigate('Home')
+            }
+            else{
+                setJobs(result.jobs)
+                navigation.navigate('Home')
+            }
         })
         .catch(error => {
+            console.log('error in catch', error)
             setIsLoading(false)
             setErrorMsg('User not found')
             Alert.alert(`Username or password not found`, '', [
@@ -83,67 +100,6 @@ const LoginScreen = ({navigation}) => {
                 { text: 'Register', onPress: handleSignUp }
             ])
         })
-    }
-
-    const getUserFromDB = async (uid) => {
-        let userFromDB
-        let isExtra = false
-        const q = query(collection(db, 'extras'), where('uid', '==', uid))
-        const querySnapshot = await getDocs(q)
-        querySnapshot.forEach((doc) => {
-            userFromDB = doc.data()
-        });
-        // console.log('userFromDB', userFromDB)
-
-        let userForAsync
-        if(userFromDB){
-            //user is extra
-            isExtra = true
-            userForAsync = JSON.stringify({uid: userFromDB.uid, isExtra: true})
-            await setAsyncStorage(userForAsync)
-            setUser({
-                uid: userFromDB.uid,
-                id: userFromDB.id,
-                email: userFromDB.email,
-                firstName: userFromDB.firstName,
-                lastName: userFromDB.lastName,
-                gender: userFromDB.gender
-            })
-            let returnedJobs = await getJobs()
-            setJobs(returnedJobs)
-        }
-        else{
-            //user is company
-            let companyFromDB;
-            const q = query(collection(db, 'companies'), where('uid', '==', uid));
-            const snapshot = await getDocs(q);
-            snapshot.forEach((doc) => {
-                companyFromDB = doc.data();
-            });
-            // console.log('companyFromDB', companyFromDB);
-
-            if(companyFromDB){
-                userForAsync = JSON.stringify({uid: companyFromDB.uid, isExtra: false})
-                await setAsyncStorage(userForAsync)
-                setUser({
-                    uid: companyFromDB.uid,
-                    id: companyFromDB.id,
-                    email: companyFromDB.email,
-                    companyName: companyFromDB.companyName,
-                    jobs: companyFromDB.jobs
-                })
-                let returnedExtras = await getExtras()
-                setExtras(returnedExtras)
-            }
-            else{
-                // likely no company or extra found for this email.  add functionality to create profile if get here.
-                Alert.alert('Something went wrong')
-                setIsLoading(false)
-                return
-            }
-        }
-
-        navigation.navigate("Home", {isExtra: isExtra})
     }
 
     const handleSetExtras = async () => {
@@ -158,8 +114,8 @@ const LoginScreen = ({navigation}) => {
 
     const handleSkip = () => {
         Alert.alert(`What are you looking for?`, '', [
-            { text: 'Extra', onPress: async ()=> {setIsLoading(true), await handleSetExtras(), navigation.navigate('Home', {isExtra: false})}},
-            { text: 'Job', onPress: async () => {setIsLoading(true), await handleSetJobs(), navigation.navigate('Home', {isExtra: true})} }
+            { text: 'Extra', onPress: async ()=> {setIsLoading(true), await handleSetExtras(), setIsLoading(false), navigation.navigate('Home', {isExtra: false})}},
+            { text: 'Job', onPress: async () => {setIsLoading(true), await handleSetJobs(), setIsLoading(false), navigation.navigate('Home', {isExtra: true})} }
         ])
     }
 
@@ -168,7 +124,7 @@ const LoginScreen = ({navigation}) => {
     return (
         <>
             <Appbar.Header>
-                    <Appbar.Content title="Extras" />
+                    <Appbar.Content title="Login" />
             </Appbar.Header>
             {isLoading ?
             <ActivityIndicator style={styles.container} animating={isLoading} color={MD2Colors.purple400} size={'large'} />
@@ -197,7 +153,7 @@ const LoginScreen = ({navigation}) => {
                         <Button style={{marginRight: 10}} mode="contained" onPress={handleLogin}>
                             Login
                         </Button>
-                        <Button style={{backgroundColor: 'blue'}} mode="contained" onPress={handleSkip}>
+                        <Button mode="contained" onPress={handleSkip}>
                             Skip
                         </Button>
                     </View>

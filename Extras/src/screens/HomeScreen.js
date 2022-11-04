@@ -6,12 +6,15 @@ import Constants from 'expo-constants'
 import { Context } from '../context/Context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getExtras, getJobs } from '../util'
+import { Appbar, TextInput, Button, ActivityIndicator, MD2Colors } from 'react-native-paper'
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 //components
 import TopBar from '../components/TopBar'
 import axios from 'axios'
 import BottomBar from '../components/BottomBar'
 import Swipes from '../components/Swipes'
+import { Alert } from 'react-native'
 
 
 const HomeScreen = ({navigation, route}) => {
@@ -23,67 +26,55 @@ const HomeScreen = ({navigation, route}) => {
   const swipesRef = useRef(null)
   const {isExtra} = route.params
 
-  // useEffect(() => {
- 
-
-  //   console.log('user on home screen', user)
-  //   console.log('jobs on home screen', jobs)
-  //   console.log('extras on home screen', extras)
-  // }, [])
-
-  function handleLike() {
+  const handleLike = () => {
     console.log('like')
     nextUser()
   }
 
-  function handlePass() {
+  const handlePass = () => {
     console.log('pass')
     nextUser()
   }
 
-  function nextUser() {
+  const nextUser = () => {
     const nextIndex = isExtra ? (jobs.length - 2 === currentIndex ? 0 : currentIndex + 1) : (extras.length - 2 === currentIndex ? 0 : currentIndex + 1)
     setCurrentIndex(nextIndex)
   }
 
-  function handleLikePress() {
+  const handleLikePress = () => {
     swipesRef.current.openLeft()
   }
-  function handlePassPress() {
+
+  const handlePassPress = () => {
     swipesRef.current.openRight()
   }
 
-  const handleSignOut = () => {
-    auth
-    .signOut()
-    .then(() => {
-      navigation.replace("Login")
-    }) 
-    .catch(error => alert(error.message))
-
-  }
+  
 
   return (
     <View style={styles.container}>
-      <TopBar />
+      
+      <Appbar.Header>
+        <Appbar.Content title={isExtra ? "Jobs" : "Extras"} />
+      </Appbar.Header>
+      <TopBar isExtra={isExtra}/>
       <View style={styles.swipes}>
-        {isExtra ?
+        {isExtra && jobs.length > 0 ? 
           jobs.map(
-            (u, i) =>
-              currentIndex === i && (
-                <Swipes
-                  key={i}
-                  ref={swipesRef}
-                  currentIndex={currentIndex}
-                  data={jobs}
-                  handleLike={handleLike}
-                  handlePass={handlePass}
-                ></Swipes>
-              )
-          )
-        :
-        extras.length > 0 &&
-          extras.map(
+              (u, i) =>
+                currentIndex === i && (
+                  <Swipes
+                    key={i}
+                    ref={swipesRef}
+                    currentIndex={currentIndex}
+                    data={jobs}
+                    handleLike={handleLike}
+                    handlePass={handlePass}
+                  ></Swipes>
+                )
+            )
+        : !isExtra && extras.length > 0 ?
+           extras.map(
             (u, i) =>            
               currentIndex === i && (
                 <Swipes
@@ -96,6 +87,8 @@ const HomeScreen = ({navigation, route}) => {
                 ></Swipes>
               )
           )
+          :
+          <View><Text>no data</Text></View>
         }
       </View>
       <BottomBar handleLikePress={handleLikePress} handlePassPress={handlePassPress} />

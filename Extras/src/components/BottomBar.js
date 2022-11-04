@@ -2,7 +2,7 @@ import React from 'react'
 import { View, StyleSheet, TouchableOpacity } from 'react-native'
 import { FontAwesome } from '@expo/vector-icons'
 
-export default function BottomBar({ handleLikePress, handlePassPress }) {
+const BottomBar = ({ handleLikePress, handlePassPress }) => {
   return (
     <View style={styles.container}>
       <View />
@@ -16,6 +16,8 @@ export default function BottomBar({ handleLikePress, handlePassPress }) {
     </View>
   )
 }
+
+export default BottomBar
 
 const styles = StyleSheet.create({
   container: {

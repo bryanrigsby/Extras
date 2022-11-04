@@ -8,87 +8,215 @@ import { getStorage, ref, getDownloadURL, uploadBytes } from 'firebase/storage'
 import { Appbar, TextInput, Button, RadioButton, Text, Divider, ActivityIndicator, MD2Colors } from 'react-native-paper'
 import DropDown from "react-native-paper-dropdown"
 import { Context } from '../context/Context'
-import { getJobs, getExtras, setAsyncStorage } from '../util'
+import { validateEmail, getJobs, getExtras, setAsyncStorage, validateSocial, validatePhoneNumber, getUserStatus } from '../util'
 import * as ImagePicker from 'expo-image-picker';
-import uuid from "uuid";
+import Ionicons from '@expo/vector-icons/Ionicons';
+import MultiSelect from 'react-native-multiple-select';
 
 
 
-const ProfileScreen = ({route, navigation}) => {
+const ProfileScreen = ({navigation, route}) => {
 
+  console.log('params in ProfileScreen', route.params)
 
-  const { user, setUser, extras, setExtras, jobs, setJobs } = useContext(Context)
-  const userEmail = route.params && route.params.userEmail ? route.params.userEmail : 'testEmail@test.com'
-  const userUID = route.params && route.params.userUID ? route.params.userUID : 'testUID'
+  const { extras, setExtras, jobs, setJobs } = useContext(Context)
+  const userInfo = route.params && route.params.userInfo ? route.params.userInfo.user : null
+  const isExtra = route.params && route.params.isExtra ? route.params.isExtra : false
+  const editProfile = route.params && route.params.editProfile ? route.params.editProfile : false
+  const extraMessage = 'This information will be used to match you with available jobs'
+  const companyMessage = 'This information will be shared upon your approval once a match is made'
+  const jobMessage = 'Post jobs from the Home screen'
 
   const genderList = [
-    {
-      label: "Male",
-      value: "male",
-    },
-    {
-      label: "Female",
-      value: "female",
-    },
-    {
-      label: "Non-Binary",
-      value: "nonbinary",
-    },
+    { label: "Male", value: "male" },
+    { label: "Female", value: "female" },
+    { label: "Non-Binary", value: "nonbinary" },
   ];
 
+  const raceList = [
+    { label: "American Indian or Alaska Native", value: "American Indian or Alaska Native" },
+    { label: "Asian", value: "Asian" },
+    { label: "Black or African American", value: "Black or African American" },
+    { label: "Hispanic or Latino", value: "Hispanic or Latino" },
+    { label: "Native Hawaiian or Other Pacific Islander.", value: "Native Hawaiian or Other Pacific Islander." },
+    { label: "White", value: "White" }
+  ];
+
+  const heightFeetList = [
+    { label: "3", value: 3 },
+    { label: "4", value: 4 },
+    { label: "5", value: 5 },
+    { label: "6", value: 6 },
+    { label: "7", value: 7 },
+    { label: "8", value: 8 },
+  ];
+
+  const heightInchesList = [
+    { label: "0", value: 0 },
+    { label: "1", value: 1 },
+    { label: "2", value: 2 },
+    { label: "3", value: 3 },
+    { label: "4", value: 4 },
+    { label: "5", value: 5 },
+    { label: "6", value: 6 },
+    { label: "7", value: 7 },
+    { label: "8", value: 8 },
+    { label: "9", value: 9 },
+    { label: "10", value: 10 },
+    { label: "11", value: 11 }
+  ];
+
+  const bodyTypeList = [
+    { label: "Rectangle", value: "Rectangle" },
+    { label: "Inverted Triangle", value: "Inverted Triangle" },
+    { label: "Hourglass", value: "Hourglass" },
+    { label: "Apple", value: "Apple" },
+    { label: "Pear", value: "Pear" },
+  ];
+
+  const fluentLanguagesList = [
+    { label: "English", value: "English" },
+    { label: "Mandarin", value: "Mandarin" },
+    { label: "Hindi", value: "Hindi" },
+    { label: "Spanish", value: "Spanish" },
+    { label: "French", value: "French" },
+    { label: "Arabic", value: "Arabic" },
+    { label: "Bengali", value: "Bengali" },
+    { label: "Russian", value: "Russian" },
+    { label: "Portuguese", value: "Portuguese" },
+    { label: "Indonesian", value: "Indonesian" }
+  ];
+
+  const religionList = [
+    { label: "None", value: "None" },
+    { label: "Christianity", value: "Christianity" },
+    { label: "Islam", value: "Islam" },
+    { label: "Hinduism", value: "Hinduism" },
+    { label: "Buddhism", value: "Buddhism" },
+    { label: "Judaism", value: "Judaism" },
+  ];
+
+
   const [userType, setUserType] = useState('extra')
-  const [showDropDown, setShowDropDown] = useState(false);
-  const [gender, setGender] = useState(null)
-  const [imageURI, setImageURI] = useState(null)
+  const [showGenderDropDown, setShowGenderDropDown] = useState(false);
+  const [gender, setGender] = useState(editProfile && userInfo ? userInfo.gender : null)
+  const [showRaceDropDown, setShowRaceDropDown] = useState(false);
+  const [race, setRace] = useState(editProfile && userInfo ? userInfo.race : null)
+  const [showHeightFeetDropDown, setShowHeightFeetDropDown] = useState(false);
+  const [heightFeet, setHeightFeet] = useState(editProfile && userInfo ? userInfo.heightFeet : null)
+  const [showHeightInchesDropDown, setShowHeightInchesDropDown] = useState(false);
+  const [heightInches, setHeightInches] = useState(editProfile && userInfo ? userInfo.heightInches : null)
+  const [showBodyTypeDropDown, setShowBodyTypeDropDown] = useState(false);
+  const [bodyType, setBodyType] = useState(editProfile && userInfo ? userInfo.bodyType : null)
+  const [showFluentLanguagesDropDown, setShowFluentLanguagesDropDown] = useState(false);
+  const [fluentLanguages, setFluentLanguages] = useState(editProfile && userInfo ? userInfo.fluentLanguages : '')
+  const [showReligionDropDown, setShowReligionDropDown] = useState(false);
+  const [religion, setReligion] = useState(editProfile && userInfo ? userInfo.religion : null)
   const [errorMsg, setErrorMsg] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [imageSelected, setImageSelected] = useState(editProfile && userInfo && userInfo.pictureURL ? true: false)
+  const [newPictureBool, setNewPictureBool] = useState(false)
+ 
 
 
   const [extra, setExtra] = useState({
-    uid: '',
-    email: '',
-    firstName: '',
-    lastName: '',
-    gender: null,
-    pictureURL: null,
-    //add rest
+    uid: editProfile && userInfo ? userInfo.uid : route.params.userUID,
+    id: editProfile && userInfo ? userInfo.id: null,
+    email: editProfile && userInfo ? userInfo.email : route.params.userEmail,
+    firstName: editProfile && userInfo ? userInfo.firstName : '',
+    lastName: editProfile && userInfo ? userInfo.lastName : '',
+    age: editProfile && userInfo ? userInfo.age : null,
+    skills: editProfile && userInfo ? userInfo.skills : '',
+    professionalBackground: editProfile && userInfo ? userInfo.professionalBackground : '',
+    pictureURL: editProfile && userInfo && isExtra ? userInfo.pictureURL : null,
   })
 
-  const setGenderFunc = (gender) => {
-    setGender(gender)
-    setValidationError({...validationError, gender: false})
+  const setDropDownFunc = (type, value) => {
+    console.log(`type: ${type}, value: ${value}`)
+    switch (type) {
+      case 'gender':
+        setGender(value)
+        break;
+      case 'race':
+        setRace(value)
+        break;
+      case 'heightFeet':
+        setHeightFeet(value)
+        break;
+      case 'heightInches':
+        setHeightInches(value)
+        break;
+      case 'bodyType':
+        setBodyType(value)
+        break;
+      case 'fluentLanguages':
+        setFluentLanguages(value)
+        break;
+      case 'religion':
+        setReligion(value)
+        break;    
+      default:
+        break;
+    }
+    
+    setValidationError({...validationError, [type]: false})
   }
 
   const [company, setCompany] = useState({
-    uid: '',
-    email: '',
-    companyName: '',
-    //add rest
+    uid: editProfile && userInfo ? userInfo.uid : route.params.userUID,
+    id: editProfile && userInfo ? userInfo.id : null,
+    email: editProfile && userInfo ? userInfo.email : route.params.userEmail,
+    companyName: editProfile && userInfo ? userInfo.companyName : '',
+    companySocialMedia: editProfile && userInfo ? userInfo.companySocialMedia : '',
+    pointOfContactFirstName: editProfile && userInfo ? userInfo.pointOfContactFirstName : '',
+    pointOfContactLastName: editProfile && userInfo ? userInfo.pointOfContactLastName : '',
+    pointOfContactEmail: editProfile && userInfo ? userInfo.pointOfContactEmail : '',
+    pointOfContactPhoneNumber: editProfile && userInfo ? userInfo.pointOfContactPhoneNumber : '',
   })
 
   const [validationError, setValidationError] = useState({
     
     //extra
-    firstName: false,
-    lastName: false,
-    gender: false,
-    imageURI: false,
+    firstName: null,
+    lastName: null,
+    age: null,
+    gender: null,
+    race: null,
+    height: null,
+    bodyType: null,
+    fluentLanguages: null,
+    religion: null,
+    skills: null,
+    professionalBackground: null,
+    pictureURL: null,
 
     //company
     companyName: false,
+    companySocialMedia: false,
+    pointOfContactFirstName: false,
+    pointOfContactLastName: false,
+    pointOfContactEmail: false,
+    pointOfContactPhoneNumber: false
   })
 
+
   useEffect(() => {
-    console.log('user in profile screen', user)
-    // console.log('extra', extra)
-    // console.log('gender', gender)
-    console.log('userEmail', userEmail)
-    console.log('userUID', userUID)
+    if(editProfile && isExtra){
+      setUserType('extra')
+    }
+    else if(editProfile && !isExtra){
+      setUserType('company')      
+    }
+    console.log('userInfo in params', route.params.userInfo)
+    console.log('isExtra in params', route.params.isExtra)
+    console.log('editProfile in params', route.params.editProfile)
+    console.log('company', company)
+    
   }, [])
-  
+
 
   const validateExtra = () => {
-    console.log('imageURI in validateExtra', imageURI)
+    console.log('getting into validateExtra')
     if(!extra.firstName || extra.firstName.trim() === ''){
       setValidationError({...validationError, firstName: true})
       setErrorMsg('First name is required')
@@ -111,16 +239,65 @@ const ProfileScreen = ({route, navigation}) => {
     }
     if(!gender){
       setValidationError({...validationError, gender: true})
-      setErrorMsg('Gender must be selected')
+      setErrorMsg('Gender is required')
       return false
     }
-    if(!imageURI){
-      setValidationError({...validationError, imageURI: true})
-      setErrorMsg('A picture must be provided')
+    if(!extra.age){
+      setValidationError({...validationError, age: true})
+      setErrorMsg('Age is required')
+      return false
+    }
+    if(isNaN(parseInt(extra.age))){
+      setValidationError({...validationError, age: true})
+      setErrorMsg('Age must be numeric')
+      return false
+    }
+    if(extra.age > 150 || extra.age < 16){
+      setValidationError({...validationError, age: true})
+      setErrorMsg('Age must be between 16 and 150')
+      return false
+    }
+    if(!race){
+      setValidationError({...validationError, race: true})
+      setErrorMsg('Race is required')
+      return false
+    }
+    if(!heightFeet || heightInches < 0){
+      setValidationError({...validationError, height: true})
+      setErrorMsg('Height must include feet and inches')
+      return false
+    }
+    if(!bodyType){
+      setValidationError({...validationError, bodyType: true})
+      setErrorMsg('Body Type is required')
+      return false
+    }
+    if(!fluentLanguages){
+      setValidationError({...validationError, fluentLanguages: true})
+      setErrorMsg('At least one language is required')
+      return false
+    }
+    if(!religion){
+      setValidationError({...validationError, religion: true})
+      setErrorMsg('Religion is required')
+      return false
+    }
+    if(!extra.skills){
+      setValidationError({...validationError, skills: true})
+      setErrorMsg('Special Skills are required')
+      return false
+    }
+    if(!extra.professionalBackground){
+      setValidationError({...validationError, professionalBackground: true})
+      setErrorMsg('Professional Background is required')
+      return false
+    }
+    if(!extra.pictureURL){
+      setValidationError({...validationError, pictureURL: true})
+      setErrorMsg('Profile picture is required')
       return false
     }
     
-
     return true
   }
   
@@ -132,42 +309,67 @@ const ProfileScreen = ({route, navigation}) => {
           return
       }
 
+      console.log('extra validated successfully')
+
       setIsLoading(true)
 
+      let uid = editProfile && userInfo ? userInfo.uid : route.params.userUID
+
       //adjust to handle multiple images
-      let returnedPictureURL = await handleImagePicked(userUID)
+      let returnedPictureURL
+      if(newPictureBool){
+        returnedPictureURL = await handleImagePicked(uid)
+      } 
 
       const extraObj = {
-        uid: userUID,
-        email: userEmail,
+        uid: uid,
+        id: extra.id,
+        email: editProfile && userInfo ? userInfo.email : route.params.userEmail,
         firstName: extra.firstName,
         lastName: extra.lastName,
         gender: gender,
+        age: extra.age,
+        race: race,
+        heightFeet: heightFeet,
+        heightInches: heightInches,
+        bodyType: bodyType,
+        fluentLanguages: fluentLanguages,
+        religion: religion,
+        skills: extra.skills,
+        professionalBackground: extra.professionalBackground,
+
         //adjust to handle multiple images
-        pictureURL: returnedPictureURL,
+        pictureURL: editProfile && userInfo ? userInfo.pictureURL : newPictureBool ? returnedPictureURL : null,
       }
 
+      console.log('extraObj', extraObj)
 
-      const docRef = await addDoc(collection(db, 'extras'), extraObj)
-      Object.assign(extraObj, {id: docRef.id})
-      const extraRef = doc(db, 'extras', docRef.id)
-      await updateDoc(extraRef, {
-        id: docRef.id
-      })
+      if(editProfile){
+        const extraRef = doc(db, 'extras', extraObj.id)
+        await updateDoc(extraRef, extraObj)
+      }
+      else{
+        const docRef = await addDoc(collection(db, 'extras'), extraObj)
+        const extraRef = doc(db, 'extras', docRef.id)
+        await updateDoc(extraRef, {
+          id: docRef.id
+        })
+  
+        const userForAsync = JSON.stringify({uid: extraObj.uid, isExtra: true});
+        await setAsyncStorage('@user', userForAsync)
+  
+        //adjust for editing profile
+        let returnedJobs = await getJobs()
+        setJobs(returnedJobs)
+      }
 
-      setUser(extraObj)
-      const userForAsync = JSON.stringify({uid: extraObj.uid, isExtra: true});
-      await setAsyncStorage(userForAsync)
-
-      //adjust for editing profile
-      let returnedJobs = await getJobs()
-      setJobs(returnedJobs)
+      
 
       setIsLoading(false)
 
       Alert.alert(
-        'Thanks for joining!',
-        'Your extra account has been created.',
+        `Your account has been ${editProfile ? 'edited' : 'created'}.`,
+        '',
         [
           {
             text: 'Yea!',
@@ -188,12 +390,67 @@ const ProfileScreen = ({route, navigation}) => {
   const validateCompany = () => {
     if(!company.companyName || company.companyName.trim() === ''){
       setValidationError({...validationError, companyName: true})
-      setErrorMsg('Company name is required')
+      setErrorMsg('Company Name is required')
       return false
     }
     if(company.companyName.length > 50){
       setValidationError({...validationError, companyName: true})
-      setErrorMsg('Company name must be less than 50 charaters')
+      setErrorMsg('Company Name must be less than 50 charaters')
+      return false
+    }
+    if(!company.companySocialMedia || company.companySocialMedia.trim() === ''){
+      setValidationError({...validationError, companySocialMedia: true})
+      setErrorMsg('Company Social Media is required')
+      return false
+    }
+    if(company.companySocialMedia.length > 500){
+      setValidationError({...validationError, companySocialMedia: true})
+      setErrorMsg('Company Social Media must be less than 500 charaters')
+      return false
+    }
+    if(!validateSocial(company.companySocialMedia)){
+      setValidationError({...validationError, companySocialMedia: true})
+      setErrorMsg('Company Social Media must be a valid url')
+      return false
+    }
+    if(!company.pointOfContactFirstName || company.pointOfContactFirstName.trim() === ''){
+      setValidationError({...validationError, pointOfContactFirstName: true})
+      setErrorMsg('Point of Contact First Name is required')
+      return false
+    }
+    if(company.pointOfContactFirstName.length > 50){
+      setValidationError({...validationError, pointOfContactFirstName: true})
+      setErrorMsg('Point of Contact First Name must be less than 50 charaters')
+      return false
+    }
+    if(!company.pointOfContactLastName || company.pointOfContactLastName.trim() === ''){
+      setValidationError({...validationError, pointOfContactLastName: true})
+      setErrorMsg('Point of Contact Last Name is required')
+      return false
+    }
+    if(company.pointOfContactLastName.length > 50){
+      setValidationError({...validationError, pointOfContactLastName: true})
+      setErrorMsg('Point of Contact Last Name must be less than 50 charaters')
+      return false
+    }
+    if(!company.pointOfContactEmail || company.pointOfContactEmail.trim() === ''){
+      setValidationError({...validationError, pointOfContactEmail: true})
+      setErrorMsg('Point of Contact Email is required')
+      return false
+    }
+    if(!validateEmail(company.pointOfContactEmail)){
+      setValidationError({...validationError, pointOfContactEmail: true})
+      setErrorMsg('Point of Contact Email is not valid')
+      return false
+    }
+    if(!company.pointOfContactPhoneNumber || company.pointOfContactPhoneNumber.trim() === ''){
+      setValidationError({...validationError, pointOfContactPhoneNumber: true})
+      setErrorMsg('Point of Contact Phone Number is required')
+      return false
+    }
+    if(!validatePhoneNumber(company.pointOfContactPhoneNumber)){
+      setValidationError({...validationError, pointOfContactPhoneNumber: true})
+      setErrorMsg('Point of Contact Phone Number is not valid')
       return false
     }
     return true
@@ -209,38 +466,51 @@ const ProfileScreen = ({route, navigation}) => {
       
       console.log('company validated successfully')
 
+      setIsLoading(true)
+
+      let uid = editProfile && userInfo ? userInfo.uid : route.params.userUID
+
       const companyObj = {
-        uid: userUID,
-        email: userEmail,
+        uid: uid,
+        id: company.id,
+        email: editProfile && userInfo ? userInfo.email : route.params.userEmail,
         companyName: company.companyName,
+        companySocialMedia: company.companySocialMedia,
+        pointOfContactFirstName: company.pointOfContactFirstName,
+        pointOfContactLastName: company.pointOfContactLastName,
+        pointOfContactEmail: company.pointOfContactEmail,
+        pointOfContactPhoneNumber: company.pointOfContactPhoneNumber
       }
 
       console.log('companyObj to be saved', companyObj)
 
-      const docRef = await addDoc(collection(db, 'companies'), companyObj)
-      Object.assign(companyObj, {id: docRef.id})
-      const companyRef = doc(db, 'companies', docRef.id)
-      await updateDoc(companyRef, {
-        id: docRef.id
-      })
+      if(editProfile){
+        //edit profile
+        const companyRef = doc(db, 'companies', companyObj.id)
+        await updateDoc(companyRef, companyObj)
+      }
+      else{
+        const docRef = await addDoc(collection(db, 'companies'), companyObj)
+        // Object.assign(companyObj, {id: docRef.id})
+        const companyRef = doc(db, 'companies', docRef.id)
+        await updateDoc(companyRef, {
+          id: docRef.id
+        })
+  
+        const userForAsync = JSON.stringify({uid: companyObj.uid, isExtra: false});
+        await setAsyncStorage('@user', userForAsync)
+  
+        //adjust for editing profile
+        let returnedExtras = await getExtras()
+        setExtras(returnedExtras)
+      }
+      
 
-      setUser(companyObj)
-      const userForAsync = JSON.stringify({uid: companyObj.uid, isExtra: false});
-      await setAsyncStorage(userForAsync)
-
-
-      //* add ability to add jobs */
-
-
-
-
-      //adjust for editing profile
-      let returnedExtras = await getExtras()
-      setExtras(returnedExtras)
+      setIsLoading(false)
 
       Alert.alert(
-        'Thanks for joining!',
-        'Your company account has been created.',
+        `Your account has been ${editProfile ? 'edited' : 'created'}.`,
+        '',
         [
           {
             text: 'Yea!',
@@ -251,6 +521,9 @@ const ProfileScreen = ({route, navigation}) => {
       )
     } catch (error) {
       console.log('an error occured', error)
+      Alert.alert('Something went wrong')
+      setIsLoading(false)
+      return
     }
 
   }
@@ -271,7 +544,11 @@ const ProfileScreen = ({route, navigation}) => {
     console.log('pick image result',result);
 
     if (!result.cancelled) {
-      setImageURI(result.uri);
+      setNewPictureBool(true)
+      setImageSelected(true)
+      // setImageURI(result.uri);
+      setExtra({...extra, pictureURL:result.uri})
+      setValidationError({...validationError, pictureURL: false})
     }
   };
 
@@ -287,13 +564,17 @@ const ProfileScreen = ({route, navigation}) => {
     });
 
     if (!result.cancelled) {
-      setImage(result.uri);
+      setNewPictureBool(true)
+      setImageSelected(true)
+      // setImage(result.uri);
+      setExtra({...extra, pictureURL:result.uri})
+      setValidationError({...validationError, pictureURL: false})
     }
   }
 
   const handleImagePicked = async (uid) => {
     try {
-      const uploadUrl = await uploadImageAsync(imageURI, uid)
+      const uploadUrl = await uploadImageAsync(extra.pictureURL, uid)
       console.log('uploadURL', uploadUrl)
       return uploadUrl
     }
@@ -328,169 +609,331 @@ const ProfileScreen = ({route, navigation}) => {
     return await getDownloadURL(fileRef);
   }
 
+ 
+
   return (
     <>
     <Appbar.Header>
-        <Appbar.Content title="Extras" />
+        <Appbar.Content title={editProfile ? "Edit Profile" : "Create Profile"} />
     </Appbar.Header>
     {isLoading ?
-      <ActivityIndicator style={styles.container} animating={isLoading} color={MD2Colors.purple400} size={'large'} />
+    <View style={styles.activityIndicatorContainer}>
+      <ActivityIndicator animating={isLoading} color={MD2Colors.purple400} size={'large'} />
+    </View>
     :
-    <View style={styles.container}>
-      <ScrollView>
-        <KeyboardAvoidingView enabled behavior={'position'} style={styles.container}>
-          <View style={styles.formContainer}>
-          <Text variant={"headlineLarge"} style={styles.label}>Who are you?</Text>
-            <View style={styles.buttonContainer}>
-                <Button style={userType == 'extra' ? {backgroundColor: 'blue', marginRight: 10, width: 150, marginBottom: 20} : {marginRight: 10, width: 150, marginBottom: 20}} mode="contained" onPress={() => setUserType('extra')}>
-                    Extra
-                </Button>
-                <Button style={userType == 'company' ? {backgroundColor: 'blue',  width: 150, marginBottom: 20} : {width: 150, marginBottom: 20}} mode="contained" onPress={() => setUserType('company')}>
-                    Company
-                </Button>
-            </View>
-            <Divider bold style={{marginBottom: 20}} />
-          
-            <View style={styles.bodyContainer}>
-              {!userType ? 
-                <View style={{display: 'none'}}></View>
-              : userType == 'extra' ? 
-              <>
-                <TextInput
-                  label="Enter First Name"
-                  value={extra.firstName}
-                  onChangeText={text => setExtra({...extra, firstName:text}, setValidationError({...validationError, firstName: false}))}
-                  style={{marginBottom: 10}}
-                />
-                <Text style={validationError.firstName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+    <View style={styles.mainContainer}>
 
-                <TextInput
-                  label="Enter Last Name"
-                  value={extra.lastName}
-                  onChangeText={text => setExtra({...extra, lastName:text}, setValidationError({...validationError, lastName: false}))}
-                  style={{marginBottom: 10}}
-                />
-                <Text style={validationError.lastName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+      {/* header */}
+      <View style={styles.headerContainer}>
+        <Text variant={"headlineLarge"} style={styles.headingText}>{editProfile && userInfo ? userInfo.email : route.params.userEmail ? route.params.userEmail :  'Welcome' }</Text>
 
-                <View style={{marginBottom: 20}}>
-                  <DropDown
-                    label={"Gender"}
-                    mode={"flat"}
-                    visible={showDropDown}
-                    showDropDown={() => setShowDropDown(true)}
-                    onDismiss={() => setShowDropDown(false)}
-                    value={gender}
-                    setValue={setGenderFunc}
-                    list={genderList}
-                  />
-                </View>
-                
-                <Text style={validationError.gender ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
-
-                <Text variant={"headlineSmall"} style={styles.label}>Profile Picture</Text>
-                <View style={styles.buttonContainer}>
-                  
-                        <Button style={{marginRight: 10, width: 150,}} mode="contained" onPress={pickImage}>
-                          Choose image
-                        </Button>
-                        <Button style={{width: 150}} mode="contained" onPress={takePhoto}>
-                          Take photo
-                        </Button>
-                    </View>
-                
-                {imageURI && <Image source={{ uri: imageURI }} style={{ width: 200, height: 200 }} />}
+        {!editProfile && 
+        <View style={styles.buttonContainer}>
+            <Button style={userType == 'extra' ? [styles.button, {marginRight: 10, backgroundColor: 'blue'}] : [styles.button, {marginRight: 10}]} mode="contained" onPress={() => setUserType('extra')}>
+              Extra
+          </Button>
            
-                <Text style={validationError.imageURI ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+          <Button style={userType == 'company' ? [styles.button, {backgroundColor: 'blue'}] : [styles.button]} mode="contained" onPress={() => setUserType('company')}>
+              Company
+          </Button>
 
-                <Divider bold style={{marginBottom: 20}} />
-                
-              </>
-              :
-              <>
-              <View style={{marginBottom: 20}}>
-              <TextInput
-                  label="Enter Company Name"
-                  value={company.companyName}
-                  onChangeText={text => setCompany({...company, companyName:text}, setValidationError({...validationError, companyName: false}))}
-                  style={{marginBottom: 10}}
-                />
-                <Text style={validationError.companyName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
-
-                
-              </View>
-              <Divider bold style={{marginBottom: 20}} />
-              </>
-              }
-            </View>
-            
-            {userType &&
-            <View style={styles.submitContainer}>
-              <Button width={300} mode="contained" onPress={userType == 'extra' ?  addExtra : addCompany}>
-                  Create Account
-              </Button>
-            </View>
-            }
-
-          </View> 
-        </KeyboardAvoidingView>
-      </ScrollView>
+          <Divider bold style={{marginBottom: 20}} />
+        </View>
+        }
       </View>
+
+      {/* scrollview */}
+      <View style={styles.contentContainer}>
+        {!userType ? 
+            <View style={{display: 'none'}}></View>
+          : userType == 'extra' ? 
+          <>
+          <KeyboardAvoidingView enabled behavior={'position'}>
+            <ScrollView>
+              <TextInput
+                label="First Name"
+                value={extra.firstName}
+                onChangeText={text => setExtra({...extra, firstName:text}, setValidationError({...validationError, firstName: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.firstName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <TextInput
+                label="Last Name"
+                value={extra.lastName}
+                onChangeText={text => setExtra({...extra, lastName:text}, setValidationError({...validationError, lastName: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.lastName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <View style={styles.textInput}>
+                <DropDown
+                  label={"Gender"}
+                  mode={"flat"}
+                  visible={showGenderDropDown}
+                  showDropDown={() => setShowGenderDropDown(true)}
+                  onDismiss={() => setShowGenderDropDown(false)}
+                  value={gender}
+                  setValue={(e) => setDropDownFunc('gender', e)}
+                  list={genderList}
+                />
+              </View>
+              <Text style={validationError.gender ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
+
+              <TextInput
+                label="Age"
+                numeric
+                keyboardType='numeric'
+                value={extra.age}
+                onChangeText={text => setExtra({...extra, age:text}, setValidationError({...validationError, age: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.age ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <View style={styles.textInput}>
+                <DropDown
+                  label={"Race"}
+                  mode={"flat"}
+                  visible={showRaceDropDown}
+                  showDropDown={() => setShowRaceDropDown(true)}
+                  onDismiss={() => setShowRaceDropDown(false)}
+                  value={race}
+                  setValue={(e) => setDropDownFunc('race', e)}
+                  list={raceList}
+                />
+              </View>
+              <Text style={validationError.race ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
+
+              <View style={styles.textInput}>
+                <DropDown
+                  label={"Height (feet)"}
+                  mode={"flat"}
+                  visible={showHeightFeetDropDown}
+                  showDropDown={() => setShowHeightFeetDropDown(true)}
+                  onDismiss={() => setShowHeightFeetDropDown(false)}
+                  value={heightFeet}
+                  setValue={(e) => setDropDownFunc('heightFeet', e)}
+                  list={heightFeetList}
+                />
+              </View>
+
+              <View style={styles.textInput}>
+                <DropDown
+                  label={"Height (inches)"}
+                  mode={"flat"}
+                  visible={showHeightInchesDropDown}
+                  showDropDown={() => setShowHeightInchesDropDown(true)}
+                  onDismiss={() => setShowHeightInchesDropDown(false)}
+                  value={heightInches}
+                  setValue={(e) => setDropDownFunc('heightInches', e)}
+                  list={heightInchesList}
+                />
+              </View>
+              <Text style={validationError.height ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
+
+              <View style={styles.textInput}>
+                <DropDown
+                  label={"Body Type"}
+                  mode={"flat"}
+                  visible={showBodyTypeDropDown}
+                  showDropDown={() => setShowBodyTypeDropDown(true)}
+                  onDismiss={() => setShowBodyTypeDropDown(false)}
+                  value={bodyType}
+                  setValue={(e) => setDropDownFunc('bodyType', e)}
+                  list={bodyTypeList}
+                />
+              </View>
+              <Text style={validationError.bodyType ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
+
+          
+              <View style={styles.textInput}>
+                <DropDown
+                  label={"Fluent Languages"}
+                  multiSelect
+                  mode={"flat"}
+                  visible={showFluentLanguagesDropDown}
+                  showDropDown={() => setShowFluentLanguagesDropDown(true)}
+                  onDismiss={() => setShowFluentLanguagesDropDown(false)}
+                  value={fluentLanguages}
+                  setValue={(e) => {setDropDownFunc('fluentLanguages', e)}}
+                  list={fluentLanguagesList}
+                />
+              </View>
+              <Text style={validationError.fluentLanguages ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
+
+              <View style={styles.textInput}>
+                <DropDown
+                  label={"Religion"}
+                  mode={"flat"}
+                  visible={showReligionDropDown}
+                  showDropDown={() => setShowReligionDropDown(true)}
+                  onDismiss={() => setShowReligionDropDown(false)}
+                  value={religion}
+                  setValue={(e) => setDropDownFunc('religion', e)}
+                  list={religionList}
+                />
+              </View>
+              <Text style={validationError.religion ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
+
+              <TextInput
+                label="Special skills"
+                numberOfLines={4}
+                multiline
+                value={extra.skills}
+                onChangeText={text => setExtra({...extra, skills:text}, setValidationError({...validationError, skills: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.skills ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <TextInput
+                label="Professional Background"
+                numberOfLines={4}
+                multiline
+                value={extra.professionalBackground}
+                onChangeText={text => setExtra({...extra, professionalBackground:text}, setValidationError({...validationError, professionalBackground: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.professionalBackground ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <Text variant={"headlineSmall"} style={{marginTop: 10, textAlign: 'center'}}>Profile Picture</Text>
+              <View style={styles.buttonContainer}>
+                <Button style={[styles.button, {marginRight: 10}]} mode="contained" onPress={pickImage}>
+                  Choose image
+                </Button>
+                <Button style={styles.button} mode="contained" onPress={takePhoto}>
+                  Take photo
+                </Button>
+              </View>
+
+              {/* <Image source={{uri: extra.pictureURL}} style={styles.photo} /> */}
+
+              <Text variant={"headlineSmall"} style={imageSelected ? [styles.imageSelected, styles.headingText] : {display: 'none'}}>
+                <Ionicons name="md-checkmark-circle" size={32} color="green" />
+                Image Selected
+              </Text>
+
+              <Text style={validationError.pictureURL ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <Divider bold style={{marginBottom: 10}} />
+              </ScrollView>
+          </KeyboardAvoidingView>
+          </>
+          :
+          <KeyboardAvoidingView>
+            <ScrollView>
+              <TextInput
+                label="Company Name"
+                value={company.companyName}
+                onChangeText={text => setCompany({...company, companyName:text}, setValidationError({...validationError, companyName: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.companyName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <TextInput
+                label="Company Social Media"
+                value={company.companySocialMedia}
+                onChangeText={text => setCompany({...company, companySocialMedia:text}, setValidationError({...validationError, companySocialMedia: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.companySocialMedia ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <TextInput
+                label="Point of Contact First Name"
+                value={company.pointOfContactFirstName}
+                onChangeText={text => setCompany({...company, pointOfContactFirstName:text}, setValidationError({...validationError, pointOfContactFirstName: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.pointOfContactFirstName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <TextInput
+                label="Point of Contact Last Name"
+                value={company.pointOfContactLastName}
+                onChangeText={text => setCompany({...company, pointOfContactLastName:text}, setValidationError({...validationError, pointOfContactLastName: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.pointOfContactLastName ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <TextInput
+                label="Point of Contact Email"
+                value={company.pointOfContactEmail}
+                onChangeText={text => setCompany({...company, pointOfContactEmail:text}, setValidationError({...validationError, pointOfContactEmail: false}))}
+                style={styles.textInput}
+              />
+              <Text style={validationError.pointOfContactEmail ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+              <TextInput
+                label="Point of Contact Phone Number"
+                value={company.pointOfContactPhoneNumber}
+                onChangeText={text => setCompany({...company, pointOfContactPhoneNumber:text}, setValidationError({...validationError, pointOfContactPhoneNumber: false}))}
+                style={{marginBottom: 20}}
+              />
+              <Text style={validationError.pointOfContactPhoneNumber ? styles.errorText : {display: 'none'}}>{errorMsg}</Text>
+
+                
+              <Divider bold style={styles.textInput} />
+            </ScrollView>
+          </KeyboardAvoidingView>
+        }
+      </View>
+
+
+      {/* footer  */}
+      <View style={styles.footerContainer}>
+        {userType &&
+          <View style={styles.submitContainer}>
+            <Button width={300} mode="contained" onPress={userType == 'extra' ?  addExtra : addCompany}>
+                {editProfile ? 'Edit' : 'Create'}
+            </Button>
+          </View>
+        }
+      </View>
+
+    </View>
     }
-  </>
+    </>
   )
-  
 }
 
 export default ProfileScreen
 
 const styles = StyleSheet.create({
-  container: {
-    height: '100%',
-    marginTop: 10
+  mainContainer: {
+    flex: 1
   },
-  header: {
-    textAlign: 'center',
-    fontSize: 25,
-    fontWeight: 'bold',
-    marginBottom: 30,
+  headerContainer:{
+    padding: 20,
+    borderBottomColor: 'grey',
+    borderBottomWidth: 1
   },
-  emailHeader: {
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    // backgroundColor: 'pink',
+  contentContainer: {
+    flex: 1
   },
-  label: {
-    textAlign: 'center',
-    // fontSize: 15,
-    // fontWeight: 'bold',
-    // marginBottom: 20,
+  footerContainer: {
+    padding: 40,
+    borderTopColor: 'grey',
+    borderTopWidth: 1
   },
-  formContainer:{
-    padding: 10,
-  },
-  formTextInput: {
-    textAlign: 'center',
-    borderWidth: 2,
-    // borderColor: 'white',
-    paddingVertical: 10,
-    marginHorizontal: 10,
-    fontSize: 20,
-    borderRadius: 6,
-    // color: 'white',
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  pickerContainer: {
+  activityIndicatorContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  bodyContainer: {
-
+  headingText: {
+    textAlign: 'center',
+    marginBottom: 10
   },
-  submitContainer: {
-    alignItems: 'center',
-    marginTop: 10
+  buttonContainer: {
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  button: {
+    width: 150,
+  },
+  textInput: {
+    marginBottom: 10
+  },
+  imageSelected: {
+    marginVertical: 10
   },
   errorText: {
     color: 'crimson',
@@ -498,31 +941,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 6,
     textAlign: 'center',
-  },    
-  textStyle: {
-    fontSize: 30,
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center"
+  }, 
+  submitContainer: {
+    alignItems: 'center',
   },
-  submitButton: {
-    // alignSelf: 'center',
-    // borderRadius: 50,
-    // backgroundColor: 'darkgreen',
-    // height: 60,
-    // justifyContent: 'center',
-    // width: '90%',
-    width: 300,
-    borderRadius: 15,
-    margin: 15,
-    padding: 15,
-    elevation: 2,
-    backgroundColor: "darkgreen",
-  },
-  buttonContainer: {
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginTop: 10,
-    marginBottom: 20,
+  photo: {
+    height: '100%',
+    resizeMode: 'cover',
+    borderRadius: 20,
   },
 })
