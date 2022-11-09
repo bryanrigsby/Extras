@@ -1,24 +1,34 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { StyleSheet } from 'react-native'
 import Swipeable from 'react-native-gesture-handler/Swipeable'
 import { RectButton } from 'react-native-gesture-handler'
 import SwipeableImage from './SwipeableImage'
 
 const Swipes = ({ data, currentIndex, handleLike, handlePass, swipesRef }) => {
-  console.log('data in Swipes', data)
+  
   const [willLike, setWillLike] = useState(false)
   const [willPass, setWillPass] = useState(false)
+
+  useEffect(() => {
+    console.log('in Swipes')
+    console.log('currentIndex', currentIndex)
+    // console.log('data in Swipes', data)
+    // console.log('currentIndex in Swipes', currentIndex)
+  }, [currentIndex])
+  
+
+
   const renderLeftActions = () => {
     return (
       <RectButton style={styles.container}>
-        <SwipeableImage data={data[currentIndex + 1]}></SwipeableImage>
+        {/* <SwipeableImage data={data[currentIndex + 1]}></SwipeableImage> */}
       </RectButton>
     )
   }
   const renderRightActions = () => {
     return (
       <RectButton style={styles.container}>
-        <SwipeableImage data={data[currentIndex + 1]}></SwipeableImage>
+        {/* <SwipeableImage data={data[currentIndex + 1]}></SwipeableImage> */}
       </RectButton>
     )
   }

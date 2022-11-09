@@ -1,17 +1,13 @@
 import {StyleSheet, Text, View, Alert } from 'react-native'
-import React, {useState, useContext, useEffect} from 'react'
-import {db} from '../firebase/firebase'
-import {collection, getDocs, query, where} from 'firebase/firestore'
+import React, {useState, useContext} from 'react'
 import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from 'firebase/auth'
-import { useNavigation } from '@react-navigation/native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Appbar, TextInput, Button, ActivityIndicator, MD2Colors } from 'react-native-paper'
 import { Context } from '../context/Context'
-import { validateEmail, getExtras, getJobs, getUserFromDB, setAsyncStorage } from '../util'
+import { validateEmail, getExtras, getJobs, getUserFromDB } from '../util'
 
-const LoginScreen = ({navigation, routes}) => {
+const LoginScreen = ({navigation, route}) => {
 
-    const { extras, setExtras, jobs, setJobs } = useContext(Context)
+    const { user, setUser } = useContext(Context)
     const auth = getAuth()
  
     const [email, setEmail] = useState('')
@@ -24,9 +20,6 @@ const LoginScreen = ({navigation, routes}) => {
         email: false,
         password: false,
     })
-
-    
-      
 
     const validateForm = () => {
         if(!email || email.trim() === ''){
@@ -55,14 +48,19 @@ const LoginScreen = ({navigation, routes}) => {
             return
         }
         setIsLoading(true)
+
         createUserWithEmailAndPassword(auth, email, password)
         .then(async userCredentials => {
-            const signedUpUser = userCredentials.user;
-            console.log('Registered with: ', signedUpUser.email)
-            navigation.navigate("Profile", {userEmail: signedUpUser.email, userUID: signedUpUser.uid})
+            console.log('userCredentials', userCredentials)
+            navigation.navigate("Profile", {loggedIn: true, editProfile: false, newUser: {uid: userCredentials.user.uid, email: userCredentials.user.email}})
         })
         .catch(error => {
-            setErrorMsg('Please try again')            
+            setIsLoading(false) 
+            setErrorMsg('Email already in use')
+            Alert.alert(`Email already in use`, '', [
+                { text: 'Try again', onPress: ()=>{}},
+                { text: 'Login', onPress: handleLogin }
+            ])    
         })
     }
 
@@ -77,19 +75,13 @@ const LoginScreen = ({navigation, routes}) => {
             const loggedInUser = userCredentials.user;
             console.log('Logged in with: ', loggedInUser)
             let result = await getUserFromDB(loggedInUser.uid)
+            if(!user){
+                setUser(result.user)
+            }
             console.log('result', result)
-            let isExtra = !!(result.user.firstName)
-            const userForAsync = JSON.stringify({uid: loggedInUser.uid, isExtra: isExtra});
-            await setAsyncStorage('@user', userForAsync)
-            //set state of jobs or extra and pass isExtra based on return
-            if(!isExtra){
-                setExtras(result.extras)
-                navigation.navigate('Home')
-            }
-            else{
-                setJobs(result.jobs)
-                navigation.navigate('Home')
-            }
+            let isExtra = !!result.user.firstName
+            console.log('isExtra in login', isExtra)
+            navigation.navigate('Home', {isExtra: isExtra, loggedIn: true})
         })
         .catch(error => {
             console.log('error in catch', error)
@@ -102,20 +94,10 @@ const LoginScreen = ({navigation, routes}) => {
         })
     }
 
-    const handleSetExtras = async () => {
-        let returnedExtras = await getExtras()
-        setExtras(returnedExtras)
-    }
-
-    const handleSetJobs = async () => {
-        let returnedJobs = await getJobs()
-        setJobs(returnedJobs)
-    }
-
     const handleSkip = () => {
         Alert.alert(`What are you looking for?`, '', [
-            { text: 'Extra', onPress: async ()=> {setIsLoading(true), await handleSetExtras(), setIsLoading(false), navigation.navigate('Home', {isExtra: false})}},
-            { text: 'Job', onPress: async () => {setIsLoading(true), await handleSetJobs(), setIsLoading(false), navigation.navigate('Home', {isExtra: true})} }
+            { text: 'Extra', onPress: async ()=> {navigation.navigate('Home', {isExtra: false, loggedIn: false})}},
+            { text: 'Job', onPress: async () => {navigation.navigate('Home', {isExtra: true, loggedIn: false})} }
         ])
     }
 
@@ -152,6 +134,9 @@ const LoginScreen = ({navigation, routes}) => {
                     <View style={styles.buttonContainer}>
                         <Button style={{marginRight: 10}} mode="contained" onPress={handleLogin}>
                             Login
+                        </Button>
+                        <Button style={{marginRight: 10}} mode="contained" onPress={handleSignUp}>
+                            Register
                         </Button>
                         <Button mode="contained" onPress={handleSkip}>
                             Skip

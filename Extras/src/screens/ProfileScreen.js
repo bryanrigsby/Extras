@@ -1,31 +1,25 @@
 import { StyleSheet, View, Alert, KeyboardAvoidingView, ScrollView, Image } from 'react-native'
 import React, {useState, useEffect, useContext} from 'react'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useNavigation } from '@react-navigation/native'
 import { db } from '../firebase/firebase'
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore'
 import { getStorage, ref, getDownloadURL, uploadBytes } from 'firebase/storage'
-import { Appbar, TextInput, Button, RadioButton, Text, Divider, ActivityIndicator, MD2Colors } from 'react-native-paper'
+import { Appbar, TextInput, Button, Text, Divider, ActivityIndicator, MD2Colors } from 'react-native-paper'
 import DropDown from "react-native-paper-dropdown"
 import { Context } from '../context/Context'
-import { validateEmail, getJobs, getExtras, setAsyncStorage, validateSocial, validatePhoneNumber, getUserStatus } from '../util'
+import { validateEmail, getJobs, getExtras, validateSocial, validatePhoneNumber } from '../util'
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import MultiSelect from 'react-native-multiple-select';
 
 
 
 const ProfileScreen = ({navigation, route}) => {
 
-  console.log('params in ProfileScreen', route.params)
+  const { user, setUser, setExtras, setJobs } = useContext(Context)
 
-  const { extras, setExtras, jobs, setJobs } = useContext(Context)
-  const userInfo = route.params && route.params.userInfo ? route.params.userInfo.user : null
+  //will only have these from editProfile
   const isExtra = route.params && route.params.isExtra ? route.params.isExtra : false
   const editProfile = route.params && route.params.editProfile ? route.params.editProfile : false
-  const extraMessage = 'This information will be used to match you with available jobs'
-  const companyMessage = 'This information will be shared upon your approval once a match is made'
-  const jobMessage = 'Post jobs from the Home screen'
+  //
 
   const genderList = [
     { label: "Male", value: "male" },
@@ -96,41 +90,39 @@ const ProfileScreen = ({navigation, route}) => {
     { label: "Judaism", value: "Judaism" },
   ];
 
-
-  const [userType, setUserType] = useState('extra')
-  const [showGenderDropDown, setShowGenderDropDown] = useState(false);
-  const [gender, setGender] = useState(editProfile && userInfo ? userInfo.gender : null)
-  const [showRaceDropDown, setShowRaceDropDown] = useState(false);
-  const [race, setRace] = useState(editProfile && userInfo ? userInfo.race : null)
-  const [showHeightFeetDropDown, setShowHeightFeetDropDown] = useState(false);
-  const [heightFeet, setHeightFeet] = useState(editProfile && userInfo ? userInfo.heightFeet : null)
-  const [showHeightInchesDropDown, setShowHeightInchesDropDown] = useState(false);
-  const [heightInches, setHeightInches] = useState(editProfile && userInfo ? userInfo.heightInches : null)
-  const [showBodyTypeDropDown, setShowBodyTypeDropDown] = useState(false);
-  const [bodyType, setBodyType] = useState(editProfile && userInfo ? userInfo.bodyType : null)
-  const [showFluentLanguagesDropDown, setShowFluentLanguagesDropDown] = useState(false);
-  const [fluentLanguages, setFluentLanguages] = useState(editProfile && userInfo ? userInfo.fluentLanguages : '')
-  const [showReligionDropDown, setShowReligionDropDown] = useState(false);
-  const [religion, setReligion] = useState(editProfile && userInfo ? userInfo.religion : null)
-  const [errorMsg, setErrorMsg] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [imageSelected, setImageSelected] = useState(editProfile && userInfo && userInfo.pictureURL ? true: false)
-  const [newPictureBool, setNewPictureBool] = useState(false)
- 
-
-
+  //Extra state
   const [extra, setExtra] = useState({
-    uid: editProfile && userInfo ? userInfo.uid : route.params.userUID,
-    id: editProfile && userInfo ? userInfo.id: null,
-    email: editProfile && userInfo ? userInfo.email : route.params.userEmail,
-    firstName: editProfile && userInfo ? userInfo.firstName : '',
-    lastName: editProfile && userInfo ? userInfo.lastName : '',
-    age: editProfile && userInfo ? userInfo.age : null,
-    skills: editProfile && userInfo ? userInfo.skills : '',
-    professionalBackground: editProfile && userInfo ? userInfo.professionalBackground : '',
-    pictureURL: editProfile && userInfo && isExtra ? userInfo.pictureURL : null,
+    uid: route.params.newUser ? route.params.newUser.uid : user ? user.uid : null,
+    email: route.params.newUser ? route.params.newUser.email : user ? user.email : null,
+    id: editProfile && isExtra ? user.id: null,
+    firstName: editProfile && isExtra ? user.firstName : null,
+    lastName: editProfile && isExtra ? user.lastName : null,
+    age: editProfile && isExtra ? user.age : null,
+    skills: editProfile && isExtra ? user.skills : null,
+    professionalBackground: editProfile && isExtra ? user.professionalBackground : null,
+    pictureURL: editProfile && isExtra ? user.pictureURL : null,
   })
 
+  //Extra state dropdown
+  const [showGenderDropDown, setShowGenderDropDown] = useState(false);
+  const [gender, setGender] = useState(editProfile && isExtra ? user.gender : null)
+  const [showRaceDropDown, setShowRaceDropDown] = useState(false);
+  const [race, setRace] = useState(editProfile && isExtra ? user.race : null)
+  const [showHeightFeetDropDown, setShowHeightFeetDropDown] = useState(false);
+  const [heightFeet, setHeightFeet] = useState(editProfile && isExtra ? user.heightFeet : null)
+  const [showHeightInchesDropDown, setShowHeightInchesDropDown] = useState(false);
+  const [heightInches, setHeightInches] = useState(editProfile && isExtra ? user.heightInches : null)
+  const [showBodyTypeDropDown, setShowBodyTypeDropDown] = useState(false);
+  const [bodyType, setBodyType] = useState(editProfile && isExtra ? user.bodyType : null)
+  // const [showFluentLanguagesDropDown, setShowFluentLanguagesDropDown] = useState(false);
+  // const [fluentLanguages, setFluentLanguages] = useState(editProfile && isExtra ? user.fluentLanguages : '')
+  const [showReligionDropDown, setShowReligionDropDown] = useState(false);
+  const [religion, setReligion] = useState(editProfile && isExtra ? user.religion : null)
+  const [imageSelected, setImageSelected] = useState(editProfile && isExtra && user.pictureURL ? true: false)
+  const [newPictureBool, setNewPictureBool] = useState(false)
+  /////
+
+  //Extra dropdown function
   const setDropDownFunc = (type, value) => {
     console.log(`type: ${type}, value: ${value}`)
     switch (type) {
@@ -162,17 +154,25 @@ const ProfileScreen = ({navigation, route}) => {
     setValidationError({...validationError, [type]: false})
   }
 
+
+  //Company state
   const [company, setCompany] = useState({
-    uid: editProfile && userInfo ? userInfo.uid : route.params.userUID,
-    id: editProfile && userInfo ? userInfo.id : null,
-    email: editProfile && userInfo ? userInfo.email : route.params.userEmail,
-    companyName: editProfile && userInfo ? userInfo.companyName : '',
-    companySocialMedia: editProfile && userInfo ? userInfo.companySocialMedia : '',
-    pointOfContactFirstName: editProfile && userInfo ? userInfo.pointOfContactFirstName : '',
-    pointOfContactLastName: editProfile && userInfo ? userInfo.pointOfContactLastName : '',
-    pointOfContactEmail: editProfile && userInfo ? userInfo.pointOfContactEmail : '',
-    pointOfContactPhoneNumber: editProfile && userInfo ? userInfo.pointOfContactPhoneNumber : '',
+    uid: route.params.newUser ? route.params.newUser.uid : user ? user.uid : null,
+    email: route.params.newUser ? route.params.newUser.email : user ? user.email : null,
+    id: editProfile ? user.id : null,
+    companyName: editProfile ? user.companyName : null,
+    companySocialMedia: editProfile ? user.companySocialMedia : null,
+    pointOfContactFirstName: editProfile ? user.pointOfContactFirstName : null,
+    pointOfContactLastName: editProfile ? user.pointOfContactLastName : null,
+    pointOfContactEmail: editProfile ? user.pointOfContactEmail : null,
+    pointOfContactPhoneNumber: editProfile ? user.pointOfContactPhoneNumber : null,
   })
+
+  //other state
+  const [errorMsg, setErrorMsg] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [userType, setUserType] = useState('extra')
+   
 
   const [validationError, setValidationError] = useState({
     
@@ -201,16 +201,14 @@ const ProfileScreen = ({navigation, route}) => {
 
 
   useEffect(() => {
+    console.log('getting into useEffect on ProfileScreen')
     if(editProfile && isExtra){
       setUserType('extra')
     }
     else if(editProfile && !isExtra){
       setUserType('company')      
     }
-    console.log('userInfo in params', route.params.userInfo)
-    console.log('isExtra in params', route.params.isExtra)
-    console.log('editProfile in params', route.params.editProfile)
-    console.log('company', company)
+    console.log('user in ProfileScreen', user)
     
   }, [])
 
@@ -272,11 +270,11 @@ const ProfileScreen = ({navigation, route}) => {
       setErrorMsg('Body Type is required')
       return false
     }
-    if(!fluentLanguages){
-      setValidationError({...validationError, fluentLanguages: true})
-      setErrorMsg('At least one language is required')
-      return false
-    }
+    // if(!fluentLanguages){
+    //   setValidationError({...validationError, fluentLanguages: true})
+    //   setErrorMsg('At least one language is required')
+    //   return false
+    // }
     if(!religion){
       setValidationError({...validationError, religion: true})
       setErrorMsg('Religion is required')
@@ -313,7 +311,7 @@ const ProfileScreen = ({navigation, route}) => {
 
       setIsLoading(true)
 
-      let uid = editProfile && userInfo ? userInfo.uid : route.params.userUID
+      let uid = route.params.newUser ? route.params.newUser.uid : user ? user.uid : null
 
       //adjust to handle multiple images
       let returnedPictureURL
@@ -323,8 +321,8 @@ const ProfileScreen = ({navigation, route}) => {
 
       const extraObj = {
         uid: uid,
+        email: route.params.newUser ? route.params.newUser.email : user ? user.email : null,
         id: extra.id,
-        email: editProfile && userInfo ? userInfo.email : route.params.userEmail,
         firstName: extra.firstName,
         lastName: extra.lastName,
         gender: gender,
@@ -333,13 +331,13 @@ const ProfileScreen = ({navigation, route}) => {
         heightFeet: heightFeet,
         heightInches: heightInches,
         bodyType: bodyType,
-        fluentLanguages: fluentLanguages,
+        // fluentLanguages: fluentLanguages,
         religion: religion,
         skills: extra.skills,
         professionalBackground: extra.professionalBackground,
 
         //adjust to handle multiple images
-        pictureURL: editProfile && userInfo ? userInfo.pictureURL : newPictureBool ? returnedPictureURL : null,
+        pictureURL: editProfile ? user.pictureURL : newPictureBool ? returnedPictureURL : null,
       }
 
       console.log('extraObj', extraObj)
@@ -354,16 +352,7 @@ const ProfileScreen = ({navigation, route}) => {
         await updateDoc(extraRef, {
           id: docRef.id
         })
-  
-        const userForAsync = JSON.stringify({uid: extraObj.uid, isExtra: true});
-        await setAsyncStorage('@user', userForAsync)
-  
-        //adjust for editing profile
-        let returnedJobs = await getJobs()
-        setJobs(returnedJobs)
       }
-
-      
 
       setIsLoading(false)
 
@@ -373,7 +362,7 @@ const ProfileScreen = ({navigation, route}) => {
         [
           {
             text: 'Yea!',
-            onPress: () => navigation.navigate('Home', {isExtra: true}),
+            onPress: () => navigation.navigate('Home', {isExtra: true, loggedIn: true}),
             style: 'cancel'
           }
         ]
@@ -468,12 +457,10 @@ const ProfileScreen = ({navigation, route}) => {
 
       setIsLoading(true)
 
-      let uid = editProfile && userInfo ? userInfo.uid : route.params.userUID
-
       const companyObj = {
-        uid: uid,
+        uid: route.params.newUser ? route.params.newUser.uid : user ? user.uid : null,
+        email: route.params.newUser ? route.params.newUser.email : user ? user.email : null,
         id: company.id,
-        email: editProfile && userInfo ? userInfo.email : route.params.userEmail,
         companyName: company.companyName,
         companySocialMedia: company.companySocialMedia,
         pointOfContactFirstName: company.pointOfContactFirstName,
@@ -485,27 +472,17 @@ const ProfileScreen = ({navigation, route}) => {
       console.log('companyObj to be saved', companyObj)
 
       if(editProfile){
-        //edit profile
         const companyRef = doc(db, 'companies', companyObj.id)
         await updateDoc(companyRef, companyObj)
       }
       else{
         const docRef = await addDoc(collection(db, 'companies'), companyObj)
-        // Object.assign(companyObj, {id: docRef.id})
         const companyRef = doc(db, 'companies', docRef.id)
         await updateDoc(companyRef, {
           id: docRef.id
         })
-  
-        const userForAsync = JSON.stringify({uid: companyObj.uid, isExtra: false});
-        await setAsyncStorage('@user', userForAsync)
-  
-        //adjust for editing profile
-        let returnedExtras = await getExtras()
-        setExtras(returnedExtras)
       }
       
-
       setIsLoading(false)
 
       Alert.alert(
@@ -514,7 +491,7 @@ const ProfileScreen = ({navigation, route}) => {
         [
           {
             text: 'Yea!',
-            onPress: () => navigation.navigate('Home', {isExtra: false}),
+            onPress: () => navigation.navigate('Home', {isExtra: false, loggedIn: true}),
             style: 'cancel'
           }
         ]
@@ -566,7 +543,6 @@ const ProfileScreen = ({navigation, route}) => {
     if (!result.cancelled) {
       setNewPictureBool(true)
       setImageSelected(true)
-      // setImage(result.uri);
       setExtra({...extra, pictureURL:result.uri})
       setValidationError({...validationError, pictureURL: false})
     }
@@ -625,7 +601,7 @@ const ProfileScreen = ({navigation, route}) => {
 
       {/* header */}
       <View style={styles.headerContainer}>
-        <Text variant={"headlineLarge"} style={styles.headingText}>{editProfile && userInfo ? userInfo.email : route.params.userEmail ? route.params.userEmail :  'Welcome' }</Text>
+        <Text variant={"headlineLarge"} style={styles.headingText}>{route.params.newUser ? route.params.newUser.email : user ? user.email : 'Welcome'}</Text>
 
         {!editProfile && 
         <View style={styles.buttonContainer}>
@@ -642,7 +618,6 @@ const ProfileScreen = ({navigation, route}) => {
         }
       </View>
 
-      {/* scrollview */}
       <View style={styles.contentContainer}>
         {!userType ? 
             <View style={{display: 'none'}}></View>
@@ -744,7 +719,7 @@ const ProfileScreen = ({navigation, route}) => {
                 />
               </View>
               <Text style={validationError.bodyType ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
-
+{/* 
           
               <View style={styles.textInput}>
                 <DropDown
@@ -759,7 +734,7 @@ const ProfileScreen = ({navigation, route}) => {
                   list={fluentLanguagesList}
                 />
               </View>
-              <Text style={validationError.fluentLanguages ? styles.errorText: {display: 'none'}}>{errorMsg}</Text>
+              <Text style={validationError.fluentLanguages ? styles.errorText: {display: 'none'}}>{errorMsg}</Text> */}
 
               <View style={styles.textInput}>
                 <DropDown
@@ -881,7 +856,12 @@ const ProfileScreen = ({navigation, route}) => {
       <View style={styles.footerContainer}>
         {userType &&
           <View style={styles.submitContainer}>
-            <Button width={300} mode="contained" onPress={userType == 'extra' ?  addExtra : addCompany}>
+            {editProfile &&
+            <Button style={{marginRight: 10}} width={150} mode="contained" onPress={() => navigation.navigate('Home', {isExtra: isExtra, loggedIn: true})}>
+                Go back
+            </Button>
+            }
+            <Button mode="contained" width={150} onPress={userType == 'extra' ?  addExtra : addCompany}>
                 {editProfile ? 'Edit' : 'Create'}
             </Button>
           </View>
@@ -911,7 +891,8 @@ const styles = StyleSheet.create({
   footerContainer: {
     padding: 40,
     borderTopColor: 'grey',
-    borderTopWidth: 1
+    borderTopWidth: 1,
+    alignItems: 'center'
   },
   activityIndicatorContainer: {
     flex: 1,
@@ -943,7 +924,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   }, 
   submitContainer: {
-    alignItems: 'center',
+    flexDirection: 'row',
   },
   photo: {
     height: '100%',

@@ -1,41 +1,32 @@
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useContext} from 'react'
 import { View, StyleSheet, Alert } from 'react-native'
 import { FontAwesome5, FontAwesome } from '@expo/vector-icons'
-import { TabRouter, useNavigation } from '@react-navigation/native';
-import { auth } from '../firebase/firebase';
-import { getAsyncStorage, getUserDBInfo, getUserFromDB } from '../util';
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useNavigation } from '@react-navigation/native';
+import { getJobs, getUserFromDB } from '../util';
+import { getAuth } from "firebase/auth";
+import { Context } from '../context/Context';
 
 
-const TopBar = ({isExtra}) => {
+const TopBar = ({ isExtra, loggedIn}) => {
 
-  const [loggedIn, setLoggedIn] = useState(false)
-  const navigation = useNavigation()
   const auth = getAuth();
+  const navigation = useNavigation()
+
+  const { user, setUser, jobs } = useContext(Context)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // console.log(user)
-      if (!user) {
-        setLoggedIn(false)
-        navigation.navigate('Login')
-      }
-      else{
-        setLoggedIn(true)
-        // Alert.alert('user logged in')
-      }
-    });
-
-    return () => {
-      unsubscribe()
-    }
+    console.log('in TopBar')
+    // console.log('user in TopBar', user)
+    // console.log('isExtra in TopBar', isExtra)
+    // console.log('loggedIn in TopBar', loggedIn)
   }, [])
   
 
   const profileButtonPressed = () => {
-    console.log('loggedIn in TopBar', loggedIn)
+    console.log('loggedIn in TopBar profileButtonPressed()', loggedIn)
     if(loggedIn){
       Alert.alert(`Where to?`, '', [
+        { text: 'Go back', onPress: () => {}},
         { text: 'Log out', onPress: () => handleSignOut()},
         { text: 'Edit Profile', onPress: () => handleGoToProfile() }
     ])
@@ -48,24 +39,14 @@ const TopBar = ({isExtra}) => {
   }
 
   const handleGoToProfile = async () => {
-    //get user id from async and get user data to pass to profile screen
-
-    let asyncUser = await getAsyncStorage('@user')
-    console.log('asyncUser', asyncUser)
-
-    let userInfo = await getUserFromDB(asyncUser.uid)
-
-    console.log('userInfo in TopBar', userInfo)
-    
-    
-
-    navigation.navigate('Profile', {userInfo: userInfo, editProfile: true, isExtra: isExtra})
+    navigation.navigate('Profile', {editProfile: true, isExtra: isExtra})
   }
 
   const handleSignOut = () => {
     auth
     .signOut()
     .then(() => {
+      setUser(null)
       navigation.replace("Login")
     }) 
     .catch(error => alert(error.message))
@@ -73,7 +54,41 @@ const TopBar = ({isExtra}) => {
   }
 
   const addJobPressed = () => {
+    console.log('loggedIn in TopBar addJobPressed()', loggedIn)
+    if(loggedIn){
+      Alert.alert(`Where to?`, '', [
+        { text: 'Go back', onPress: () => {}},
+        { text: 'See my jobs', onPress: () => getJobs()},
+        { text: 'Add job', onPress: () => addJob() }
+    ])
+    }
+    else{
+      console.log('user is not logged in')
+      navigation.navigate('Login')
+    }
+  }
 
+  const getJobs = () => {
+    //filter through jobs to get ones for this user
+    console.log('user in TopBar getJobs()', user)
+    console.log('jobs in TopBar getJobs()', jobs)
+    if(jobs.length < 1){
+      Alert.alert(`You don't seem to have any jobs`, '', [
+        { text: 'Go Back', onPress: () => {}},
+        { text: 'Add job', onPress: () => addJob() }
+    ])
+    }
+    else{
+      let companyJobs= jobs.filter(j => j.companyID === user.id)
+      console.log('companyJobs', companyJobs)
+      navigation.navigate('Jobs', {companyJobs: companyJobs})
+    }
+    //go to Jobs screen
+  }
+
+  const addJob = () => {
+    navigation.navigate('ManageJobs')
+    //go to ManageJobs screen
   }
 
   const likedListPressed = () => {

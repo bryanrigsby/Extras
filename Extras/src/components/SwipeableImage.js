@@ -1,12 +1,20 @@
-import React from 'react'
+import React, {useEffect} from 'react'
 import { View, Image, StyleSheet, Text } from 'react-native'
 import { FontAwesome } from '@expo/vector-icons'
 
 const SwipeableImage = ({ data, willLike, willPass }) => {
-  console.log('data in SwipeableImage', data)
+  
+  useEffect(() => {
+    console.log('in SwipeableImage')
+    console.log('data', data)
+  }, [])
+  
+
   return (
     <View>
-      <Image source={{ uri: data.pictureURL }} style={styles.photo} />
+      <Image source={data ? { uri: data.pictureURL } : {url: 'https://firebasestorage.googleapis.com/v0/b/extras-54574.appspot.com/o/stock.jpeg?alt=media&token=b28d1ede-b6c5-4c23-9739-de895456e5eb'}} style={styles.photo} />
+
+
       {willLike && (
         <View style={styles.likeBox}>
           <Text style={{ ...styles.textPrimary, color: '#64EDCC' }}>LIKE</Text>
@@ -19,20 +27,21 @@ const SwipeableImage = ({ data, willLike, willPass }) => {
       )}
       <View style={styles.textContainer}>
         <View style={styles.textRow}>
-          {data.gender ? 
+          {data?.gender ? 
           <>
           <Text style={[styles.textPrimary, styles.textShadow]}>{data.firstName}</Text>
           <Text style={[styles.textPrimary, styles.textShadow]}>{data.lastName}</Text>
           </>
-        : 
+        : data?.jobDesc ? 
         <Text style={[styles.textPrimary, styles.textShadow]}>{data.jobDesc}</Text>
-        
+        :
+        <Text>default</Text>
         }
         </View>
-        <View style={styles.textRow}>
+        {/* <View style={styles.textRow}>
           <FontAwesome name="map-marker" size={20} color="white"></FontAwesome>
-          {/* <Text style={[styles.textSecondary, styles.textShadow]}>{data.location.city}</Text> */}
-        </View>
+          <Text style={[styles.textSecondary, styles.textShadow]}>{data.location.city}</Text>
+        </View> */}
       </View>
     </View>
   )

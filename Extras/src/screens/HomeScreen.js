@@ -1,30 +1,36 @@
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React, { useState, useEffect, useRef, useContext } from 'react'
-import { auth, db } from '../firebase/firebase'
-import { useNavigation } from '@react-navigation/native'
+import { StyleSheet, Text, View } from 'react-native'
+import React, { useState, useRef, useContext, useEffect } from 'react'
 import Constants from 'expo-constants'
 import { Context } from '../context/Context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getExtras, getJobs } from '../util'
-import { Appbar, TextInput, Button, ActivityIndicator, MD2Colors } from 'react-native-paper'
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { Appbar } from 'react-native-paper'
 
 //components
 import TopBar from '../components/TopBar'
-import axios from 'axios'
 import BottomBar from '../components/BottomBar'
 import Swipes from '../components/Swipes'
-import { Alert } from 'react-native'
+
 
 
 const HomeScreen = ({navigation, route}) => {
 
-  console.log('params in HomeScreen', route.params)
 
-  const { user, setUser, extras, setExtras, jobs, setJobs } = useContext(Context)
+
+  const { user, extras, jobs } = useContext(Context)
   const [currentIndex, setCurrentIndex] = useState(0)
   const swipesRef = useRef(null)
-  const {isExtra} = route.params
+  const {isExtra, loggedIn } = route.params
+
+  useEffect(() => {
+    console.log('in home')
+    // console.log('isExtra from route.params on HomeScreen', isExtra)
+    // console.log('loggedIn from route.params on HomeScreen', loggedIn)
+    console.log('extras on HomeScreen', extras)
+    console.log('jobs on HomeScreen', jobs)
+    // console.log('currentIndex in useEffect', currentIndex)
+  }, [])
+  
+
+
 
   const handleLike = () => {
     console.log('like')
@@ -37,7 +43,10 @@ const HomeScreen = ({navigation, route}) => {
   }
 
   const nextUser = () => {
-    const nextIndex = isExtra ? (jobs.length - 2 === currentIndex ? 0 : currentIndex + 1) : (extras.length - 2 === currentIndex ? 0 : currentIndex + 1)
+    console.log('getting here')
+    const nextIndex = isExtra ? 
+    (jobs.length - 2 === currentIndex ? 0 : currentIndex + 1) : 
+    (extras.length - 2 === currentIndex ? 0 : currentIndex + 1)
     setCurrentIndex(nextIndex)
   }
 
@@ -57,9 +66,9 @@ const HomeScreen = ({navigation, route}) => {
       <Appbar.Header>
         <Appbar.Content title={isExtra ? "Jobs" : "Extras"} />
       </Appbar.Header>
-      <TopBar isExtra={isExtra}/>
+      <TopBar isExtra={isExtra} loggedIn={loggedIn} />
       <View style={styles.swipes}>
-        {isExtra && jobs.length > 0 ? 
+        {isExtra && jobs.length > 1 ? 
           jobs.map(
               (u, i) =>
                 currentIndex === i && (
@@ -73,7 +82,7 @@ const HomeScreen = ({navigation, route}) => {
                   ></Swipes>
                 )
             )
-        : !isExtra && extras.length > 0 ?
+        : !isExtra && extras.length > 1 ?
            extras.map(
             (u, i) =>            
               currentIndex === i && (

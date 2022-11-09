@@ -1,8 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Alert } from 'react-native';
 import {collection, getDocs, query, where} from 'firebase/firestore'
 import { db } from './firebase/firebase';
-import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export function validateEmail(email) {
     var re = /\S+@\S+\.\S+/;
@@ -33,26 +31,6 @@ export function checkPwd(str) {
         return("bad_char");
     }
     return("ok");
-}
-
-export const setAsyncStorage = async (tag, userForAsync) => {
-    console.log(`tag => ${tag}, userForAsync => ${userForAsync}`)
-    try {
-        await AsyncStorage.setItem(tag, userForAsync)
-      } catch(e) {
-        console.log('setAsyncStorage error', e)
-      }
-}
-
-export const getAsyncStorage = async (tag) => {
-    try {
-        const jsonValue = await AsyncStorage.getItem(tag)
-        console.log('return in getAsyncStorage', jsonValue != null ? JSON.parse(jsonValue) : null)
-        return jsonValue != null ? JSON.parse(jsonValue) : null
-    } catch(e) {
-        console.log('getAsyncStorage error', e)
-    }
-      
 }
 
 export const getExtras = async () => {
@@ -88,18 +66,6 @@ export const getJobs = async () => {
     return temp
 }
 
-export const getUserStatus = async () => {
-    const auth = getAuth();
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            console.log('user', user)
-            return user.uid;
-        } else {
-            return false
-        }
-    });
-}
-
 export const getUserFromDB = async (uid) => {
     console.log('uid', uid)
     let userFromDB
@@ -111,8 +77,7 @@ export const getUserFromDB = async (uid) => {
     console.log('userFromDB', userFromDB)
 
     if(userFromDB){
-        let returnedJobs = await getJobs()
-        return {user: userFromDB, jobs: returnedJobs}
+        return {user: userFromDB}
     }
     else{
         //user is company
@@ -125,12 +90,11 @@ export const getUserFromDB = async (uid) => {
         console.log('companyFromDB', companyFromDB);
 
         if(companyFromDB){
-            let returnedExtras = await getExtras()
-            return {user: companyFromDB, extras: returnedExtras}
+            return {user: companyFromDB}
         }
         else{
             // likely no company or extra found for this email.  add functionality to create profile if get here.
-            Alert.alert('Something went wrong')
+            console.log('error in getUserFromDB')
             return
         }
     }
